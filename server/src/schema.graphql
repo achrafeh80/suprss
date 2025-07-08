@@ -1,0 +1,119 @@
+
+# Schéma GraphQL de l'API SUPRSS
+schema {
+  query: Query
+  mutation: Mutation
+  # (On pourrait ajouter subscription ici plus tard pour le chat en temps réel)
+}
+# Types de base (scalars) : on utilisera String, Int, Boolean, etc., et on peut définir DateTime via scalars custom si besoin
+scalar DateTime
+
+type Query {
+  me: User               # Renvoie les infos du user connecté (ou null si non auth)
+  myCollections: [Collection!]!  # Collections auxquelles l'utilisateur courant a accès (y compris privées et partagées)
+  collection(id: Int!): Collection  # Détails d'une collection (si membre)
+  feeds(collectionId: Int!): [Feed!]!  # Liste des flux d'une collection donnée
+  articles(collectionId: Int!, feedId: Int, unreadOnly: Boolean, favoriteOnly: Boolean, search: String): [Article!]!
+  # ^ Récupère les articles d'une collection (tous flux ou filtré par feedId), avec possibilité de filtrer (non lus, favoris, texte intégral)
+  comments(collectionId: Int!, articleId: Int!): [Comment!]!  # Commentaires d'un article dans une collection
+  messages(collectionId: Int!): [Message!]!  # Messages chat d'une collection
+  # Pour import/export, on pourrait avoir par ex:
+  exportFeeds(format: String = "opml"): String!  # Exporte les abonnements de l'utilisateur (tous ses flux) au format demandé (OPML/JSON/CSV) sous forme de chaîne
+}
+type Mutation {
+  register(email: String!, password: String!, name: String): AuthPayload!    # Inscription d'un nouvel utilisateur
+  login(email: String!, password: String!): AuthPayload!                     # Connexion avec email/password
+  addOAuthConnection(provider: OAuthProvider!, oauthCode: String!): AuthPayload! 
+  # ^ (Optionnel) Liaison d'un compte OAuth après connexion, ou connexion initiale via OAuth (selon implémentation)
+  createCollection(name: String!, shared: Boolean): Collection!             # Créer une nouvelle collection (par défaut privée)
+  inviteMember(collectionId: Int!, userEmail: String!, role: Role): Collection! 
+  # ^ Invite un utilisateur (existant identifié par email) dans une collection partagée, avec un rôle
+  addFeed(collectionId: Int!, url: String!): Feed!                          # Ajoute un flux RSS à une collection (et importe ses articles)
+  removeFeed(collectionId: Int!, feedId: Int!): Collection!                 # Retire un flux d'une collection
+  markArticleRead(articleId: Int!, read: Boolean!): Article!                # Marque ou démarque un article comme lu pour l'utilisateur courant
+  toggleFavorite(articleId: Int!, favorite: Boolean!): Article!             # Marque/démarque un article en favori pour l'utilisateur
+  addComment(collectionId: Int!, articleId: Int!, content: String!): Comment!  # Ajoute un commentaire sur un article
+  sendMessage(collectionId: Int!, content: String!): Message!               # Envoie un message dans le chat de la collection
+  updatePassword(oldPassword: String!, newPassword: String!): User!         # Change le mot de passe utilisateur (après vérification)
+  updateUserSettings(darkMode: Boolean, fontSize: Int): User!               # Met à jour les préférences UI de l'utilisateur
+  importFeeds(fileContent: String!, format: String!): Collection!           # Importe des flux à partir d'un contenu de fichier (OPML/JSON/CSV) dans une collection (ex: la collection perso par défaut)
+}
+# (On pourrait également ajouter un type Subscription pour les notifications en temps réel:
+# e.g. subscription { messageAdded(collectionId: Int!): Message } pour recevoir les nouveaux messages instantanément)
+# Types principaux
+type User {
+  id: Int!
+  email: String!
+  name: String
+  collections: [Collection!]!      # Collections privées ou partagées où l'utilisateur est membre
+  # (on peut ajouter d'autres champs comme settings: p.ex. darkMode, fontSize)
+}
+type Collection {
+  id: Int!
+  name: String!
+  isShared: Boolean!
+  owner: User        # Propriétaire (peut être null si collection de base sans partage formel)
+  feeds: [Feed!]!    # Flux dans cette collection
+  members: [Member!]!  # Membres de la collection (utilisateurs et leur rôle)
+  articles(unreadOnly: Boolean, favoriteOnly: Boolean, search: String): [Article!]!
+  # ^ Possibilité de demander les articles via le type Collection directement, avec filtres
+  comments(articleId: Int!): [Comment!]!   # commentaires pour un article donné
+  messages: [Message!]!    # messages de chat de la collection
+}
+type Feed {
+  id: Int!
+  title: String!
+  url: String!
+  description: String
+  siteUrl: String
+  tags: [String!]           # tags de catégorisation (découpe de la chaîne tags)
+  status: String!
+  updateEvery: Int
+  lastFetched: DateTime
+  articles: [Article!]!    # articles du flux (peut être filtré côté client via Query articles)
+}
+type Article {
+  id: Int!
+  feed: Feed!         # le flux d'origine
+  title: String!
+  link: String!
+  author: String
+  pubDate: DateTime
+  snippet: String
+  content: String
+  isRead: Boolean!    # indique si l'article est marqué lu par l'utilisateur courant
+  isFavorite: Boolean! # favori par l'utilisateur courant
+  comments: [Comment!]! # commentaires de cet article (filtrés par collection courante via Query)
+}
+type Comment {
+  id: Int!
+  author: User!
+  content: String!
+  createdAt: DateTime!
+  # On peut inclure article {id,title} et collection {id,name} si besoin pour contexte
+}
+type Message {
+  id: Int!
+  author: User!
+  content: String!
+  createdAt: DateTime!
+}
+type Member {
+  user: User!
+  role: Role!
+}
+enum Role {
+  READER
+  COMMENTER
+  EDITOR
+  OWNER
+}
+enum OAuthProvider {
+  GOOGLE
+  GITHUB
+  MICROSOFT
+}
+type AuthPayload {
+  token: String!
+  user: User!
+}

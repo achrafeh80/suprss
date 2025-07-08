@@ -1,0 +1,48 @@
+version: '3.9'
+services:
+  db:
+    image: postgres:13
+    container_name: suprss_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=suprss
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - suprss-net
+
+  api:
+    build: ./server
+    container_name: suprss_api
+    depends_on:
+      - db
+    env_file:
+      - server/.env   # on suppose qu'un fichier .env est fourni avec les vars nécessaires
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/suprss
+      - CLIENT_URL=http://localhost:3000   # pour redirection OAuth
+      - NODE_ENV=production
+    ports:
+      - "4000:4000"
+    networks:
+      - suprss-net
+
+  web:
+    build: ./client
+    container_name: suprss_web
+    depends_on:
+      - api
+    environment:
+      - REACT_APP_API_URL=http://localhost:4000/graphql
+      - NODE_ENV=production
+    ports:
+      - "3000:80"   # on servira l'app sur le port 3000 de l'hôte, port 80 du container (nginx)
+    networks:
+      - suprss-net
+
+networks:
+  suprss-net:
+volumes:
+  postgres_data:
