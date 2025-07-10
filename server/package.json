@@ -1,23 +1,40 @@
 {
-  "name": "server",
+  "name": "suprss-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Backend API GraphQL for SUPRSS",
+  "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/index.js",
+    "start": "npx prisma migrate deploy --schema=prisma/schema.prisma && node src/index.js",
+    "seed": "node prisma/seed.js"
   },
+  "dependencies": {
+    "@prisma/client": "^4.16.0",
+    "apollo-server-express": "^3.11.1",
+    "bcrypt": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "graphql": "^16.6.0",
+    "jsonwebtoken": "^8.5.1",
+    "passport": "^0.6.0",
+    "passport-github2": "^0.1.12",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-microsoft": "^2.1.0",
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22",
+    "prisma": "^4.16.0"
+  },
+  "prisma": {
+    "schema": "/prisma/schema.prisma"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "license": "MIT",
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "cors": "^2.8.5",
-    "dotenv": "^17.1.0",
-    "express": "^5.1.0",
-    "express-graphql": "^0.12.0",
-    "graphql": "^16.11.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.16.2"
-  }
+  "type": "commonjs"
 }

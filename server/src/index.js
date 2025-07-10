@@ -1,67 +1,92 @@
-
-require('dotenv').config();
 const express = require('express');
-const { ApolloServer } = require('apollo-server-express');
-const { readFileSync } = require('fs');
-const path = require('path');
-const jwt = require('jsonwebtoken');
-const resolvers = require('./resolvers');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-// (Optionnel: configuration Passport OAuth)
+const cors = require('cors');
+const dotenv = require('dotenv');
 const passport = require('passport');
-require('./oauthStrategies')(passport); // un module où on configurerait GoogleStrategy, etc.
+const { ApolloServer } = require('apollo-server-express');
+const { typeDefs } = require('./graphql/schema');
+const { resolvers } = require('./graphql/resolvers');
+const prisma = require('./prisma');           // Prisma client
+require('./auth/passport');                  // Configure les stratégies Passport
+
+// Chargement des variables d'environnement
+dotenv.config();
+
+// Crée l'application Express
 const app = express();
 
-// Middleware CORS (autoriser le front-end)
-const corsOptions = {
-  origin: '*'  // en production, on restreindrait à l'URL du client
-};
-const cors = require('cors');
-app.use(cors(corsOptions));
-
-// Middleware pour parser JSON (si on avait des routes REST pour upload par ex.)
+// Configuration du CORS pour autoriser le frontend
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: false
+}));
 app.use(express.json());
-
-// Initialiser Passport (OAuth2)
 app.use(passport.initialize());
 
-// Chargement du schéma GraphQL (SDL) et démarrage ApolloServer
-const typeDefs = readFileSync(path.join(__dirname, 'schema.graphql'), 'utf8');
-const apolloServer = new ApolloServer({
-  typeDefs,
-  resolvers,
-  context: async ({ req }) => {
-    // Extrait le token JWT de l'en-tête Authorization s'il existe
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    let user = null;
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        user = await prisma.user.findUnique({ where: { id: decoded.userId } });
-      } catch (err) {
-        console.warn("JWT invalide ou expiré");
-      }
-    }
-    return { user, prisma };
-  }
+// Routes d'authentification OAuth2 (Google, GitHub, Microsoft)
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
+app.get('/auth/google/callback', passport.authenticate('google', { session: false, failureRedirect: '/login' }), (req, res) => {
+  // L'utilisateur OAuth est attaché à req.user
+  const user = req.user;
+  const token = require('jsonwebtoken').sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '2h' });
+  // Redirige vers le frontend avec le token JWT dans le fragment d'URL
+  res.redirect(`${FRONTEND_URL}/#token=${token}`);
 });
-(async () => {
-  await apolloServer.start();
-  apolloServer.applyMiddleware({ app, path: '/graphql', cors: corsOptions });
-  // Routes OAuth2 (exemple Google)
-  app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-  app.get('/auth/google/callback', passport.authenticate('google', { session: false }), (req, res) => {
-    // Succès OAuth: générer un JWT et rediriger vers le client avec ce token
-    const token = jwt.sign({ userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    // Rediriger vers le frontend avec le token (par ex. https://app.suprss.com/oauth-callback?token=...)
-    res.redirect(`${process.env.CLIENT_URL}/oauth-callback?token=${token}`);
+
+app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'], session: false }));
+app.get('/auth/github/callback', passport.authenticate('github', { session: false, failureRedirect: '/login' }), (req, res) => {
+  const user = req.user;
+  const token = require('jsonwebtoken').sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '2h' });
+  res.redirect(`${FRONTEND_URL}/#token=${token}`);
+});
+
+app.get('/auth/microsoft', passport.authenticate('microsoft', { scope: ['user.read'], session: false }));
+app.get('/auth/microsoft/callback', passport.authenticate('microsoft', { session: false, failureRedirect: '/login' }), (req, res) => {
+  const user = req.user;
+  const token = require('jsonwebtoken').sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '2h' });
+  res.redirect(`${FRONTEND_URL}/#token=${token}`);
+});
+
+// Initialise Apollo Server pour GraphQL
+async function startServer() {
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    context: async ({ req }) => {
+      // Vérifie le header Authorization pour récupérer l'utilisateur courant
+      let user = null;
+      const authHeader = req.headers.authorization || '';
+      if (authHeader.startsWith('Bearer ')) {
+        const token = authHeader.slice(7);
+        try {
+          const payload = require('jsonwebtoken').verify(token, process.env.JWT_SECRET);
+          user = await prisma.user.findUnique({ where: { id: payload.userId } });
+        } catch (e) {
+          // Token invalide ou expiré
+          user = null;
+        }
+      }
+      return { prisma, user };
+    }
   });
-  // (Idem pour GitHub, Microsoft routes si nécessaire)
-  
-  // Démarrer le serveur HTTP
+  await server.start();
+  server.applyMiddleware({ app, path: '/graphql', cors: false });
+
+  // Démarre le serveur Express
   const PORT = process.env.PORT || 4000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Serveur GraphQL démarré sur http://localhost:${PORT}/graphql`);
+  app.listen(PORT, async () => {
+    console.log(`✅ Serveur API GraphQL démarré sur http://localhost:${PORT}/graphql`);
+    // Si aucune donnée initiale, peupler la base (utilisateurs, flux de démonstration)
+    const userCount = await prisma.user.count();
+    if (userCount === 0) {
+      console.log("Seeding initial data...");
+      await require('../prisma/seed');
+      console.log("✅ Données initiales insérées.");
+    }
   });
-})();
+}
+
+startServer().catch(error => {
+  console.error("Erreur au démarrage du serveur:", error);
+  process.exit(1);
+});

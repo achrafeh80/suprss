@@ -1,48 +1,43 @@
-version: '3.9'
+
+version: "3.8"
 services:
   db:
     image: postgres:13
+    restart: always
     container_name: suprss_db
-    restart: unless-stopped
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=suprss
+      - POSTGRES_USER=${POSTGRES_USER:-suprss}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-suprss}
+      - POSTGRES_DB=${POSTGRES_DB:-suprss}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - suprss-net
-
-  api:
-    build: ./server
-    container_name: suprss_api
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  server:
+    build: 
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: suprss_server
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID}
+      - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET}
+      - OAUTH_GITHUB_CLIENT_ID=${OAUTH_GITHUB_CLIENT_ID}
+      - OAUTH_GITHUB_CLIENT_SECRET=${OAUTH_GITHUB_CLIENT_SECRET}
+      - OAUTH_MICROSOFT_CLIENT_ID=${OAUTH_MICROSOFT_CLIENT_ID}
+      - OAUTH_MICROSOFT_CLIENT_SECRET=${OAUTH_MICROSOFT_CLIENT_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
     depends_on:
       - db
-    env_file:
-      - server/.env   # on suppose qu'un fichier .env est fourni avec les vars nécessaires
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/suprss
-      - CLIENT_URL=http://localhost:3000   # pour redirection OAuth
-      - NODE_ENV=production
     ports:
       - "4000:4000"
-    networks:
-      - suprss-net
-
-  web:
-    build: ./client
-    container_name: suprss_web
+  client:
+    build: ./frontend
+    container_name: suprss_client
     depends_on:
-      - api
-    environment:
-      - REACT_APP_API_URL=http://localhost:4000/graphql
-      - NODE_ENV=production
+      - server
     ports:
-      - "3000:80"   # on servira l'app sur le port 3000 de l'hôte, port 80 du container (nginx)
-    networks:
-      - suprss-net
-
-networks:
-  suprss-net:
+      - "3000:80"
 volumes:
-  postgres_data:
+  db-data:

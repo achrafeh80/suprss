@@ -1,130 +1,137 @@
-
-generator client {
-  provider = "prisma-client-js"
-}
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  MEMBER
+}
+
+enum FontSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
 model User {
-  id        Int     @id @default(autoincrement())
-  email     String  @unique
-  password  String  // hash bcrypt
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String?   // Hash de mot de passe (null si OAuth uniquement)
   name      String?
-  // OAuth provider IDs
-  googleId    String? @unique
-  githubId    String? @unique
-  microsoftId String? @unique
-  // Collections user is a member of (through Membership join table)
-  memberships Membership[]
-  // Comments and messages authored by user
+  darkMode  Boolean   @default(false)
+  fontSize  FontSize  @default(MEDIUM)
+  accounts  Account[] // Comptes OAuth liés
+  memberships CollectionMembership[]
+  articlesStatus ArticleStatus[]
   comments   Comment[]
   messages   Message[]
+  ownedCollections Collection[] @relation("UserOwnedCollections")
+  createdAt DateTime  @default(now())
 }
+
+model Account {
+  id                Int    @id @default(autoincrement())
+  provider          String
+  providerAccountId String  // ID du profil dans le provider (par ex Google sub)
+  user              User    @relation(fields: [userId], references: [id])
+  userId            Int
+  @@unique([provider, providerAccountId])
+}
+
 model Collection {
-  id       Int     @id @default(autoincrement())
-  name     String
-  isShared Boolean  @default(false)
-  owner    User?    @relation(fields: [ownerId], references: [id])
-  ownerId  Int?
-  // Feeds included in this collection (M:N via CollectionFeed)
-  feeds    CollectionFeed[]
-  // Members of this collection
-  memberships Membership[]
-  // Comments in this collection (on articles)
-  comments   Comment[]
-  // Chat messages in this collection
-  messages   Message[]
+  id          Int       @id @default(autoincrement())
+  name        String
+  isShared    Boolean   @default(false)
+  owner User? @relation("UserOwnedCollections", fields: [ownerId], references: [id])
+  ownerId     Int?      // proprietaire initial de la collection
+  memberships CollectionMembership[]
+  collectionFeeds CollectionFeed[]
+  comments    Comment[]
+  messages    Message[]
+  createdAt   DateTime  @default(now())
 }
-model Feed {
-  id          Int    @id @default(autoincrement())
-  title       String
-  url         String  @unique
-  description String?
-  siteUrl     String? // link to the website if available
-  // tags could be stored as comma-separated string or via a separate Tag model for flexibility
-  tags        String?
-  status      String  @default("active") // e.g. 'active', 'inactive'
-  // Articles in this feed
-  articles    Article[]
-  // Collections that include this feed
-  collections CollectionFeed[]
-  // Frequency of updates in minutes (approximate)
-  updateEvery Int?    @default(60)
-  lastFetched DateTime?
-}
-model Article {
-  id         Int     @id @default(autoincrement())
-  feed       Feed    @relation(fields: [feedId], references: [id])
-  feedId     Int
-  title      String
-  link       String
-  author     String?
-  pubDate    DateTime?
-  content    String?  // full content or summary
-  // For performance, we may keep a short snippet too (but can derive from content)
-  snippet    String?
-  // Comments for this article in various collections
-  comments   Comment[]
-  // Read/favorite status per user (join table)
-  userStates UserArticle[]
-}
-model Comment {
+
+model CollectionMembership {
   id           Int       @id @default(autoincrement())
-  content      String
-  createdAt    DateTime  @default(now())
-  // relationships
-  author       User      @relation(fields: [authorId], references: [id])
-  authorId     Int
-  article      Article   @relation(fields: [articleId], references: [id])
-  articleId    Int
-  collection   Collection@relation(fields: [collectionId], references: [id])
-  collectionId Int
-}
-model Message {
-  id           Int       @id @default(autoincrement())
-  content      String
-  createdAt    DateTime  @default(now())
-  author       User      @relation(fields: [authorId], references: [id])
-  authorId     Int
-  collection   Collection@relation(fields: [collectionId], references: [id])
-  collectionId Int
-}
-model Membership {
-  // Join table between User and Collection with role information
-  id           Int        @id @default(autoincrement())
-  user         User       @relation(fields: [userId], references: [id])
+  user         User      @relation(fields: [userId], references: [id])
   userId       Int
   collection   Collection @relation(fields: [collectionId], references: [id])
   collectionId Int
-  role         Role       @default(READER)
-  // Unique constraint to avoid duplicate membership
+  role         Role
   @@unique([userId, collectionId])
 }
+
+model Feed {
+  id             Int      @id @default(autoincrement())
+  title          String
+  url            String   @unique
+  description    String?
+  tags           String[] @default([])  // Tags/catégories associées au flux
+  status         String   @default("active") // statut (ex: active/inactive)
+  updateInterval Int      @default(60)       // Fréquence de mise à jour en minutes
+  lastFetched    DateTime?
+  articles       Article[]
+  collectionFeeds CollectionFeed[]
+  createdAt      DateTime @default(now())
+}
+
 model CollectionFeed {
-  // Join table between Collection and Feed
-  id           Int        @id @default(autoincrement())
   collection   Collection @relation(fields: [collectionId], references: [id])
   collectionId Int
   feed         Feed       @relation(fields: [feedId], references: [id])
   feedId       Int
-  @@unique([collectionId, feedId])
+  @@id([collectionId, feedId])
 }
-model UserArticle {
-  // Join table for many-to-many between User and Article, to store read/favorite state
-  id        Int    @id @default(autoincrement())
-  user      User   @relation(fields: [userId], references: [id])
-  userId    Int
-  article   Article@relation(fields: [articleId], references: [id])
-  articleId Int
-  isRead    Boolean @default(false)
-  isFavorite Boolean @default(false)
-  // Each user has at most one state record per article
-  @@unique([userId, articleId])
+
+model Article {
+  id        Int      @id @default(autoincrement())
+  feed      Feed     @relation(fields: [feedId], references: [id])
+  feedId    Int
+  title     String
+  link      String
+  guid      String?  // identifiant unique du flux (GUID) si disponible
+  author    String?
+  content   String?  // contenu ou extrait de l'article
+  published DateTime
+  comments  Comment[]
+  status    ArticleStatus[]
+  @@unique([feedId, guid])
 }
-enum Role {
-  READER  // lecture seule (peut lire, éventuellement commenter selon choix)
-  COMMENTER // peut lire + commenter
-  EDITOR  // peut ajouter/modifier des flux dans la collection
-  OWNER   // propriétaire (tous droits) - généralement le créateur
+
+model ArticleStatus {
+  user        User    @relation(fields: [userId], references: [id])
+  userId      Int
+  article     Article @relation(fields: [articleId], references: [id])
+  articleId   Int
+  isRead      Boolean @default(false)
+  isFavorite  Boolean @default(false)
+  // Composite primary key pour (user, article)
+  @@id([userId, articleId])
+}
+
+model Comment {
+  id           Int        @id @default(autoincrement())
+  content      String
+  article      Article    @relation(fields: [articleId], references: [id])
+  articleId    Int
+  collection   Collection @relation(fields: [collectionId], references: [id])
+  collectionId Int
+  author       User       @relation(fields: [authorId], references: [id])
+  authorId     Int
+  createdAt    DateTime   @default(now())
+}
+
+model Message {
+  id           Int        @id @default(autoincrement())
+  content      String
+  collection   Collection @relation(fields: [collectionId], references: [id])
+  collectionId Int
+  author       User       @relation(fields: [authorId], references: [id])
+  authorId     Int
+  createdAt    DateTime   @default(now())
 }
