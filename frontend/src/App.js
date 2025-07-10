@@ -9,7 +9,8 @@ import SettingsPage from './pages/SettingsPage';
 
 // Configuration du client Apollo pour se connecter à l'API GraphQL
 const httpLink = createHttpLink({
-  uri: process.env.REACT_APP_API_URL || '/graphql'
+  uri: process.env.REACT_APP_API_URL || 'http://localhost:4000/graphql',
+  credentials: 'include',
 });
 
 const authLink = setContext((_, { headers }) => {
@@ -22,22 +23,16 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
-
 const client = new ApolloClient({
-  link: new HttpLink({
-    uri: process.env.REACT_APP_API_URL || 'http://localhost:4000/graphql',
-    credentials: 'include',
-  }),
+  link: authLink.concat(httpLink),
   cache: new InMemoryCache(),
 });
-
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [theme, setTheme] = useState({ darkMode: false, fontSize: 'MEDIUM' });
 
   useEffect(() => {
-    // Vérifier si redirection OAuth nous a donné un token dans l'URL
     const hash = window.location.hash;
     if (hash.includes('token=')) {
       const newToken = hash.split('token=')[1];
@@ -45,13 +40,11 @@ function App() {
         localStorage.setItem('token', newToken);
         setToken(newToken);
       }
-      // Nettoyer le fragment de l'URL
       window.history.replaceState(null, '', window.location.pathname);
     }
   }, []);
 
   useEffect(() => {
-    // Appliquer le thème (classes CSS sur le body)
     if (theme.darkMode) {
       document.body.classList.add('dark-mode');
     } else {
@@ -59,9 +52,12 @@ function App() {
     }
     document.body.classList.remove('font-small', 'font-medium', 'font-large');
     if (theme.fontSize) {
-      const sizeClass = theme.fontSize === 'SMALL' ? 'font-small'
-                      : theme.fontSize === 'LARGE' ? 'font-large'
-                      : 'font-medium';
+      const sizeClass =
+        theme.fontSize === 'SMALL'
+          ? 'font-small'
+          : theme.fontSize === 'LARGE'
+          ? 'font-large'
+          : 'font-medium';
       document.body.classList.add(sizeClass);
     }
   }, [theme]);
@@ -80,7 +76,7 @@ function App() {
             <>
               <Route path="/" element={<HomePage theme={theme} setTheme={setTheme} />} />
               <Route path="/settings" element={<SettingsPage theme={theme} setTheme={setTheme} onLogout={() => { localStorage.removeItem('token'); setToken(null); }} />} />
-              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="/login" element={<LoginPage onLoginSuccess={(tok) => { setToken(tok); }} />} />
               <Route path="/register" element={<Navigate to="/" replace />} />
             </>
           )}

@@ -4,7 +4,7 @@
   "description": "Frontend React de l'application SUPRSS",
   "private": true,
   "dependencies": {
-    "@apollo/client": "^3.7.14",
+    "@apollo/client": "^3.13.8",
     "ajv": "^8.11.0",
     "graphql": "^16.6.0",
     "react": "^18.2.0",
@@ -33,5 +33,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/graphql": "^14.2.3"
   }
 }

@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, gql } from '@apollo/client';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const REGISTER_MUTATION = gql`
   mutation Register($email: String!, $password: String!, $name: String) {
     register(email: $email, password: $password, name: $name) {
-      id
-      email
+      token
+      user {
+        id
+        email
+        name
+      }
     }
   }
 `;
@@ -14,6 +18,16 @@ const REGISTER_MUTATION = gql`
 function RegisterPage() {
   const [form, setForm] = useState({ email: '', password: '', name: '' });
   const [register, { loading, error, data }] = useMutation(REGISTER_MUTATION);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data?.register?.token) {
+      // Sauvegarder le token
+      localStorage.setItem('token', data.register.token);
+      // Rediriger vers la page d'accueil
+      navigate('/');
+    }
+  }, [data, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,16 +36,6 @@ function RegisterPage() {
       await register({ variables: form });
     } catch {}
   };
-
-  if (data) {
-    // Inscription réussie
-    return (
-      <div className="auth-page">
-        <h1>Inscription réussie</h1>
-        <p>Votre compte a été créé. <Link to="/login">Connectez-vous</Link> pour continuer.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="auth-page">

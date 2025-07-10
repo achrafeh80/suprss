@@ -316,8 +316,14 @@ const resolvers = {
           fontSize: 'MEDIUM'
         }
       });
-      return user;
+      const token = jwt.sign(
+        { userId: user.id },
+        process.env.JWT_SECRET,
+        { expiresIn: '2h' }
+      );
+      return { token, user };
     },
+
     login: async (parent, { email, password }, { prisma }) => {
       const user = await prisma.user.findUnique({ where: { email } });
       if (!user) {

@@ -17,8 +17,8 @@ const app = express();
 // Configuration du CORS pour autoriser le frontend
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 app.use(cors({
-  origin: FRONTEND_URL,
-  credentials: false
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  credentials: true
 }));
 app.use(express.json());
 app.use(passport.initialize());
