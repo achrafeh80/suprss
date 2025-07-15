@@ -32,6 +32,12 @@ services:
       - db
     ports:
       - "4000:4000"
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npm run start
+      "
+
   client:
     build: ./frontend
     container_name: suprss_client

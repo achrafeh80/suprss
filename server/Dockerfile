@@ -25,4 +25,4 @@ COPY --from=build /app/src ./src
 
 EXPOSE 4000
 
-CMD ["npm", "run", "start"]
+CMD npx prisma migrate deploy && npm run start

@@ -54,13 +54,14 @@ model Collection {
   comments    Comment[]
   messages    Message[]
   createdAt   DateTime  @default(now())
+
 }
 
 model CollectionMembership {
   id           Int       @id @default(autoincrement())
   user         User      @relation(fields: [userId], references: [id])
   userId       Int
-  collection   Collection @relation(fields: [collectionId], references: [id])
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   collectionId Int
   role         Role
   @@unique([userId, collectionId])
