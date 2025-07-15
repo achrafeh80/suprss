@@ -31,10 +31,26 @@ function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email || !form.password) return;
+
     try {
-      await register({ variables: form });
-    } catch {}
+      const { data } = await register({
+        variables: {
+          email: form.email,
+          password: form.password,
+          name: form.name,
+        },
+      });
+
+      if (data?.register?.token) {
+        localStorage.setItem("token", data.register.token);
+        window.location.href = "/";
+      } else {
+        console.error("Register mutation returned no data", data);
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
   };
 
   return (

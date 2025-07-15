@@ -309,9 +309,9 @@ const resolvers = {
       const hashed = await bcrypt.hash(password, 10);
       const user = await prisma.user.create({
         data: {
-          email,
+          email: email,
           password: hashed,
-          name: name || null,
+          name: name,
           darkMode: false,
           fontSize: 'MEDIUM'
         }
@@ -321,7 +321,13 @@ const resolvers = {
         process.env.JWT_SECRET,
         { expiresIn: '2h' }
       );
-      return { token, user };
+      return { token, user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          darkMode: user.darkMode,
+          fontSize: user.fontSize
+        } };
     },
 
     login: async (parent, { email, password }, { prisma }) => {
@@ -338,7 +344,13 @@ const resolvers = {
         throw new Error("Email ou mot de passe incorrect.");
       }
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '2h' });
-      return { token, user };
+      return { token, user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          darkMode: user.darkMode,
+          fontSize: user.fontSize
+        } };
     },
     updateSettings: async (parent, { darkMode, fontSize }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
