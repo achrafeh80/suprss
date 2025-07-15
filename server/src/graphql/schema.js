@@ -100,8 +100,8 @@ const typeDefs = gql`
   }
 
   type Mutation {
-    register(email: String!, password: String!, name: String): AuthPayload!
-    login(email: String!, password: String!): AuthPayload!
+    register(email: String!, password: String!, name: String): AuthPayload
+    login(email: String!, password: String!): AuthPayload
     updateSettings(darkMode: Boolean, fontSize: FontSize): User!
 
     createCollection(name: String!): Collection!
