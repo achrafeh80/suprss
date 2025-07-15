@@ -147,7 +147,7 @@ const ADD_MESSAGE = gql`
 `;
 
 const ADD_MEMBER = gql`
-  mutation AddMember($collectionId: ID!, $userEmail: String!, $role: String!) {
+  mutation AddMember($collectionId: ID!, $userEmail: String!, $role: Role) {
     addMember(collectionId: $collectionId, userEmail: $userEmail, role: $role) {
       user { id email name }
       role
@@ -207,7 +207,17 @@ function HomePage({ theme, setTheme }) {
   const [markFav] = useMutation(MARK_FAV_MUTATION, { onCompleted: () => refetchArticles() });
   const [addComment] = useMutation(ADD_COMMENT, { onCompleted: () => refetchArticles() });
   const [addMessage] = useMutation(ADD_MESSAGE, { onCompleted: () => refetchCols() });
-  const [addMember] = useMutation(ADD_MEMBER, { onCompleted: () => refetchCols() });
+  const [addMember] = useMutation(ADD_MEMBER, {
+    onCompleted: (data) => {
+      alert(`Membre ajouté : ${data.addMember.user.email}`);
+      refetchCols();
+      setNewMemberEmail("");
+      setNewMemberRole("MEMBER");
+    },
+    onError: (err) => {
+      alert("Erreur : " + err.message);
+    }
+  });  
   const [removeMember] = useMutation(REMOVE_MEMBER, { onCompleted: () => refetchCols() });
   const [exportFeeds] = useMutation(EXPORT_FEEDS);
 
@@ -251,18 +261,23 @@ function HomePage({ theme, setTheme }) {
   };
 
   const handleAddMember = () => {
-    if (newMemberEmail.trim()) {
-      addMember({
-        variables: {
-          collectionId: selectedCollection,
-          userEmail: newMemberEmail,
-          role: newMemberRole
-        }
-      });
-      setNewMemberEmail("");
-      setNewMemberRole("MEMBER");
+    if (!newMemberEmail.trim()) {
+      alert("Veuillez saisir un email.");
+      return;
     }
+    if (!selectedCollection) {
+      alert("Veuillez sélectionner une collection.");
+      return;
+    }
+    addMember({
+      variables: {
+        collectionId: selectedCollection,
+        userEmail: newMemberEmail,
+        role: newMemberRole
+      }
+    });
   };
+
 
   const handleRemoveMember = (userId) => {
     removeMember({
