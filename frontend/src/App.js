@@ -7,7 +7,6 @@ import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
 import SettingsPage from './pages/SettingsPage';
 
-// Configuration du client Apollo pour se connecter à l'API GraphQL
 const httpLink = createHttpLink({
   uri: process.env.REACT_APP_API_URL || 'http://localhost:4000/graphql',
   credentials: 'include',
@@ -68,16 +67,20 @@ function App() {
         <Routes>
           {!token ? (
             <>
-              <Route path="/login" element={<LoginPage onLoginSuccess={(tok) => { setToken(tok); }} />} />
+              {/* Routes publiques */}
+              <Route path="/login" element={<LoginPage onLoginSuccess={(tok) => setToken(tok)} />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="*" element={<Navigate to="/login" replace />} />
             </>
           ) : (
             <>
+              {/* Routes privées */}
               <Route path="/" element={<HomePage theme={theme} setTheme={setTheme} />} />
               <Route path="/settings" element={<SettingsPage theme={theme} setTheme={setTheme} onLogout={() => { localStorage.removeItem('token'); setToken(null); }} />} />
-              <Route path="/login" element={<LoginPage onLoginSuccess={(tok) => { setToken(tok); }} />} />
+              {/* Ces routes ne doivent pas être accessibles si connecté */}
+              <Route path="/login" element={<Navigate to="/" replace />} />
               <Route path="/register" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </>
           )}
         </Routes>

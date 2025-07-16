@@ -1,7 +1,7 @@
 // chemin : ./frontend/src/pages/HomePage.js
 import React, { useEffect, useState } from 'react';
 import { useQuery, gql, useMutation } from '@apollo/client';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // ----------------------
 // GraphQL Queries
@@ -72,6 +72,16 @@ const SEARCH_ARTICLES = gql`
       feed { title }
       isRead
       isFavorite
+    }
+  }
+`;
+
+const ME_QUERY = gql`
+  query Me {
+    me {
+      id
+      email
+      name
     }
   }
 `;
@@ -197,6 +207,14 @@ function HomePage({ theme, setTheme }) {
     },
     skip: !selectedCollection
   });
+  const { data: meData, loading: loadingMe } = useQuery(ME_QUERY);
+
+  useEffect(() => {
+    if (!loadingMe && !meData?.me) {
+      navigate("/login");
+    }
+  }, [loadingMe, meData, navigate]);
+
 
   // Mutations
   const [createCollection] = useMutation(CREATE_COLLECTION, { onCompleted: () => refetchCols() });
@@ -299,6 +317,20 @@ function HomePage({ theme, setTheme }) {
     refetchArticles();
   };
 
+    if (loadingMe) return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100vh',
+      fontSize: '18px',
+      color: '#666'
+    }}>
+      Vérification de la session...
+    </div>
+  );
+
+
   if (loadingCols) return <div style={{
     display: 'flex',
     justifyContent: 'center',
@@ -388,7 +420,7 @@ function HomePage({ theme, setTheme }) {
               value={newCollectionName}
               onChange={(e) => setNewCollectionName(e.target.value)}
               style={{
-                width: '100%',
+                width: '90%',
                 padding: '0.75rem',
                 border: '2px solid #e2e8f0',
                 borderRadius: '8px',
