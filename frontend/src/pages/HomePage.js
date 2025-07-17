@@ -51,6 +51,9 @@ const GET_ARTICLES = gql`
         title
         published
         feed { title }
+        link
+        author
+        content
         isRead
         isFavorite
         comments {
@@ -146,6 +149,7 @@ const ADD_COMMENT = gql`
   }
 `;
 
+
 const ADD_MESSAGE = gql`
   mutation AddMessage($collectionId: ID!, $content: String!) {
     addMessage(collectionId: $collectionId, content: $content) {
@@ -192,6 +196,8 @@ function HomePage({ theme, setTheme }) {
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [newComment, setNewComment] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
   const [newMessage, setNewMessage] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("MEMBER");
@@ -270,6 +276,89 @@ function HomePage({ theme, setTheme }) {
       setNewComment("");
     }
   };
+
+  const handleUpdateComment = async (commentId) => {
+    try {
+      const res = await fetch("http://localhost:4000/graphql", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + localStorage.getItem("token"),
+        },
+        body: JSON.stringify({
+          query: `
+            mutation UpdateComment($commentId: ID!, $content: String!) {
+              updateComment(commentId: $commentId, content: $content) {
+                id
+                content
+              }
+            }
+          `,
+          variables: { commentId, content: editingContent },
+        }),
+      });
+
+      const json = await res.json();
+
+      if (json.data) {
+        setCollections(prev =>
+          prev.map(col => ({
+            ...col,
+            articles: col.articles.map(art => ({
+              ...art,
+              comments: art.comments.map(c =>
+                c.id === commentId ? { ...c, content: editingContent } : c
+              )
+            }))
+          }))
+        );
+
+        setEditingCommentId(null);
+        setEditingContent('');
+      }
+    } catch (err) {
+      console.error("Erreur modification :", err);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      const res = await fetch("http://localhost:4000/graphql", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + localStorage.getItem("token"),
+        },
+        body: JSON.stringify({
+          query: `
+            mutation DeleteComment($commentId: ID!) {
+              deleteComment(commentId: $commentId)
+            }
+          `,
+          variables: { commentId },
+        }),
+      });
+
+      const json = await res.json();
+      if (json.data.deleteComment) {
+        setCollections(prev =>
+          prev.map(col => ({
+            ...col,
+            articles: col.articles.map(art => ({
+              ...art,
+              comments: art.comments.filter(c => c.id !== commentId)
+            }))
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Erreur suppression :", err);
+    }
+  };
+
+
+
+
 
   const handleAddMessage = () => {
     if (newMessage.trim()) {
@@ -420,7 +509,7 @@ function HomePage({ theme, setTheme }) {
               value={newCollectionName}
               onChange={(e) => setNewCollectionName(e.target.value)}
               style={{
-                width: '90%',
+                width: '95%',
                 padding: '0.75rem',
                 border: '2px solid #e2e8f0',
                 borderRadius: '8px',
@@ -506,68 +595,72 @@ function HomePage({ theme, setTheme }) {
                     padding: '1rem',
                     backgroundColor: '#f8fafc'
                   }}>
-                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                      <li style={{
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
+                    <li style={{
+                      padding: '0.5rem',
+                      borderRadius: '6px',
+                      backgroundColor: !selectedFeed ? '#667eea' : 'transparent',
+                      color: !selectedFeed ? 'white' : '#4a5568',
+                      marginBottom: '0.25rem',
+                      border: '1px solid #e2e8f0' // 👈 Contour ajouté
+                    }}>
+                      <button 
+                        onClick={() => setSelectedFeed(null)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'inherit',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: '500'
+                        }}
+                      >
+                        Tous les articles
+                      </button>
+                    </li>
+
+                    {col.feeds.map((feed) => (
+                      <li key={feed.id} style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         padding: '0.5rem',
                         borderRadius: '6px',
-                        backgroundColor: !selectedFeed ? '#667eea' : 'transparent',
-                        color: !selectedFeed ? 'white' : '#4a5568',
-                        marginBottom: '0.25rem'
+                        backgroundColor: feed.id === selectedFeed ? '#667eea' : 'transparent',
+                        color: feed.id === selectedFeed ? 'white' : '#4a5568',
+                        marginBottom: '0.25rem',
+                        border: '1px solid #e2e8f0' // 👈 Contour ajouté ici aussi
                       }}>
                         <button 
-                          onClick={() => setSelectedFeed(null)}
+                          onClick={() => setSelectedFeed(feed.id)}
+                          style={{
+                            flex: 1,
+                            background: 'none',
+                            border: 'none',
+                            textAlign: 'left',
+                            color: 'inherit',
+                            cursor: 'pointer',
+                            fontSize: '13px'
+                          }}
+                        >
+                          {feed.title}
+                        </button>
+                        <button 
+                          onClick={() => handleRemoveFeed(feed.id)}
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: 'inherit',
                             cursor: 'pointer',
-                            fontSize: '13px',
-                            fontWeight: '500'
+                            padding: '0.25rem',
+                            borderRadius: '4px',
+                            opacity: 0.7
                           }}
                         >
-                          Tous les articles
+                          🗑️
                         </button>
                       </li>
-                      {col.feeds.map((feed) => (
-                        <li key={feed.id} style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '0.5rem',
-                          borderRadius: '6px',
-                          backgroundColor: feed.id === selectedFeed ? '#667eea' : 'transparent',
-                          color: feed.id === selectedFeed ? 'white' : '#4a5568',
-                          marginBottom: '0.25rem'
-                        }}>
-                          <button 
-                            onClick={() => setSelectedFeed(feed.id)}
-                            style={{
-                              flex: 1,
-                              background: 'none',
-                              border: 'none',
-                              textAlign: 'left',
-                              color: 'inherit',
-                              cursor: 'pointer',
-                              fontSize: '13px'
-                            }}
-                          >
-                            {feed.title}
-                          </button>
-                          <button 
-                            onClick={() => handleRemoveFeed(feed.id)}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              cursor: 'pointer',
-                              padding: '0.25rem',
-                              borderRadius: '4px',
-                              opacity: 0.7
-                            }}
-                          >
-                            🗑️
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                    ))}
+                  </ul>
+
                     
                     <div style={{ marginBottom: '1.5rem' }}>
                       <input
@@ -575,7 +668,7 @@ function HomePage({ theme, setTheme }) {
                         value={newFeedUrl}
                         onChange={(e) => setNewFeedUrl(e.target.value)}
                         style={{
-                          width: '100%',
+                          width: '95%',
                           padding: '0.5rem',
                           border: '1px solid #e2e8f0',
                           borderRadius: '6px',
@@ -642,7 +735,7 @@ function HomePage({ theme, setTheme }) {
                         value={newMemberEmail}
                         onChange={(e) => setNewMemberEmail(e.target.value)}
                         style={{
-                          width: '100%',
+                          width: '95%',
                           padding: '0.5rem',
                           border: '1px solid #e2e8f0',
                           borderRadius: '6px',
@@ -716,7 +809,7 @@ function HomePage({ theme, setTheme }) {
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="Votre message"
                       style={{
-                        width: '100%',
+                        width: '95%',
                         padding: '0.5rem',
                         border: '1px solid #e2e8f0',
                         borderRadius: '6px',
@@ -824,40 +917,58 @@ function HomePage({ theme, setTheme }) {
             marginBottom: '2rem',
             gap: '1rem'
           }}>
-            <input
-              placeholder="Recherche..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                flex: 1,
-                padding: '0.75rem 1rem',
-                border: '2px solid #e2e8f0',
-                borderRadius: '25px',
-                fontSize: '16px',
-                outline: 'none',
-                transition: 'border-color 0.2s ease'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#667eea'}
-              onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-            />
-            <button 
-              onClick={handleSearch}
-              style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '25px',
-                cursor: 'pointer',
-                fontSize: '16px',
-                fontWeight: '500',
-                transition: 'transform 0.2s ease'
-              }}
-              onMouseOver={(e) => e.target.style.transform = 'translateY(-1px)'}
-              onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
-            >
-              🔎
-            </button>
+          <input
+            placeholder="Recherche..."
+            value={searchQuery}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSearchQuery(value);
+              if (value.length >= 2) {
+                clearTimeout(window.searchDebounce);
+                window.searchDebounce = setTimeout(() => {
+                  window.searchReady = true;
+                }, 500);
+              } else {
+                window.searchReady = false;
+              }
+            }}
+            style={{
+              flex: 1,
+              padding: '0.75rem 1rem',
+              border: '2px solid #e2e8f0',
+              borderRadius: '25px',
+              fontSize: '16px',
+              outline: 'none',
+              transition: 'border-color 0.2s ease'
+            }}
+            onFocus={(e) => e.target.style.borderColor = '#667eea'}
+            onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+          />
+          <button 
+            onClick={() => {
+              if (window.searchReady) {
+                handleSearch();
+              } else {
+                console.log("Not ready: type at least 2 characters and wait a moment.");
+              }
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '25px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'transform 0.2s ease'
+            }}
+            onMouseOver={(e) => e.target.style.transform = 'translateY(-1px)'}
+            onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+          >
+            🔎
+          </button>
+
           </div>
 
           {articlesData && articlesData.collection && (
@@ -895,42 +1006,40 @@ function HomePage({ theme, setTheme }) {
                     e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
                   }}
                   >
-                    <div style={{ marginBottom: '1rem' }}>
-                      <h3 style={{
-                        color: '#2d3748',
-                        fontSize: '1.125rem',
-                        fontWeight: '600',
-                        marginBottom: '0.5rem',
-                        lineHeight: '1.4'
-                      }}>
-                        {article.title}
-                      </h3>
-                                              <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1rem',
-                        color: '#718096',
-                        fontSize: '14px'
-                      }}>
-                        <span style={{
-                          background: '#667eea',
-                          color: 'white',
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          fontWeight: '500'
-                        }}>
-                          {article.feed.title}
-                        </span>
-                        <span>{new Date(article.published).toLocaleString()}</span>
-                      </div>
-                    </div>
+
                     
                     <div style={{
                       display: 'flex',
                       gap: '0.75rem',
                       marginBottom: '1.5rem'
                     }}>
+                      <h3 style={{ margin: '0 0 0.25rem 0' }}> 
+                        <a 
+                          href={article.link} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ textDecoration: 'none', color: '#0077cc' }}
+                        >
+                          {article.title}
+                        </a>
+                      </h3>
+
+                      {article.author && (
+                        <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.75rem' }}>
+                          par {article.author}
+                        </div>
+                      )}
+
+                    {article.content && (
+                      <p style={{ marginTop: '0.5rem' }}>
+                        {article.content.substring(0, 300)}...
+                      </p>
+                    )}
+                    <div style={{ marginTop: '0.5rem' }}>
+                      {article.isRead ? "✅ Lu" : "📄 Non lu"}
+                      {article.isFavorite && <span style={{ marginLeft: '1rem', color: 'gold' }}>★ Favori</span>}
+                    </div>
+                      
                       <button 
                         onClick={() => markRead({ variables: { articleId: article.id, read: !article.isRead } })}
                         style={{
@@ -968,7 +1077,27 @@ function HomePage({ theme, setTheme }) {
                         {article.isFavorite ? "★ Retirer favori" : "☆ Favori"}
                       </button>
                     </div>
-                    
+                    <div style={{ marginBottom: '1rem' }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem',
+                        color: '#718096',
+                        fontSize: '14px'
+                      }}>
+                        <span style={{
+                          background: '#667eea',
+                          color: 'white',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '12px',
+                          fontSize: '12px',
+                          fontWeight: '500'
+                        }}>
+                          {article.feed.title}
+                        </span>
+                        <span>{new Date(article.published).toLocaleString()}</span>
+                      </div>
+                    </div>
                     <div style={{
                       borderTop: '1px solid #e2e8f0',
                       paddingTop: '1rem'
@@ -985,31 +1114,91 @@ function HomePage({ theme, setTheme }) {
                         maxHeight: '150px',
                         overflowY: 'auto'
                       }}>
-                        {article.comments.map((c) => (
-                          <div key={c.id} style={{
-                            backgroundColor: '#f7fafc',
-                            padding: '0.75rem',
-                            borderRadius: '8px',
-                            marginBottom: '0.5rem',
-                            border: '1px solid #e2e8f0'
-                          }}>
-                            <div style={{
-                              fontSize: '13px',
-                              lineHeight: '1.4'
-                            }}>
-                              <span style={{ 
-                                fontWeight: '600', 
-                                color: '#667eea',
-                                marginRight: '0.5rem'
-                              }}>
-                                {c.author.name}:
-                              </span>
+                      {article.comments.map((c) => (
+                        <div key={c.id} style={{
+                          backgroundColor: '#f7fafc',
+                          padding: '0.75rem',
+                          borderRadius: '8px',
+                          marginBottom: '0.5rem',
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          <div style={{ fontSize: '13px', lineHeight: '1.4' }}>
+                            <span style={{ fontWeight: '600', color: '#667eea', marginRight: '0.5rem' }}>
+                              {c.author.name}:
+                            </span>
+                            {editingCommentId === c.id ? (
+                              <>
+                                <input
+                                  type="text"
+                                  value={editingContent}
+                                  onChange={(e) => setEditingContent(e.target.value)}
+                                  style={{
+                                    fontSize: '12px',
+                                    padding: '4px',
+                                    width: '80%',
+                                    marginRight: '0.5rem',
+                                  }}
+                                />
+                                <button onClick={() => handleUpdateComment(c.id)} style={{
+                                  fontSize: '12px',
+                                  backgroundColor: '#38a169',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  padding: '2px 6px',
+                                  marginRight: '4px'
+                                }}>💾</button>
+                                <button onClick={() => {
+                                  setEditingCommentId(null);
+                                  setEditingContent('');
+                                }} style={{
+                                  fontSize: '12px',
+                                  backgroundColor: '#e53e3e',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  padding: '2px 6px'
+                                }}>✖️</button>
+                              </>
+                            ) : (
                               <span style={{ color: '#4a5568' }}>
                                 {c.content}
                               </span>
-                            </div>
+                            )}
                           </div>
-                        ))}
+                          {c.author.id === user.id && editingCommentId !== c.id && (
+                            <div style={{ marginTop: '0.5rem' }}>
+                              <button 
+                                onClick={() => {
+                                  setEditingCommentId(c.id);
+                                  setEditingContent(c.content);
+                                }}
+                                style={{
+                                  marginRight: '0.5rem',
+                                  fontSize: '12px',
+                                  backgroundColor: '#edf2f7',
+                                  border: '1px solid #cbd5e0',
+                                  borderRadius: '4px',
+                                  padding: '2px 6px'
+                                }}
+                              >✏️ Modifier</button>
+
+                              <button 
+                                onClick={() => handleDeleteComment(c.id)}
+                                style={{
+                                  fontSize: '12px',
+                                  backgroundColor: '#edf2f7',
+                                  border: '1px solid #cbd5e0',
+                                  borderRadius: '4px',
+                                  padding: '2px 6px'
+                                }}
+                              >🗑️ Supprimer</button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+
                       </div>
                       
                       <div style={{

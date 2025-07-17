@@ -625,6 +625,41 @@ const resolvers = {
       });
       return message;
     },
+    updateComment: async (_, { commentId, content }, { prisma, user }) => {
+      if (!user) throw new Error("Non authentifié");
+
+      const existing = await prisma.comment.findUnique({
+        where: { id: commentId },
+        include: { author: true },
+      });
+
+      if (!existing || existing.author.id !== user.id) {
+        throw new Error("Non autorisé");
+      }
+
+      return prisma.comment.update({
+        where: { id: commentId },
+        data: { content },
+      });
+    },
+
+    deleteComment: async (_, { commentId }, { prisma, user }) => {
+      if (!user) throw new Error("Non authentifié");
+
+      const existing = await prisma.comment.findUnique({
+        where: { id: commentId },
+        include: { author: true },
+      });
+
+      if (!existing || existing.author.id !== user.id) {
+        throw new Error("Non autorisé");
+      }
+
+      await prisma.comment.delete({ where: { id: commentId } });
+      return true;
+    },
+
+
     addMember: async (parent, { collectionId, userEmail, role }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
       const colId = Number(collectionId);
