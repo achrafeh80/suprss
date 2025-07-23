@@ -149,6 +149,23 @@ const ADD_COMMENT = gql`
   }
 `;
 
+const EDIT_COMMENT = gql`
+  mutation EditComment($id: Int!, $content: String!) {
+    editComment(id: $id, content: $content) {
+      id
+      content
+    }
+  }
+`;
+
+const DELETE_COMMENT = gql`
+  mutation DeleteComment($id: Int!) {
+    deleteComment(id: $id) {
+      id
+    }
+  }
+`;
+
 
 const ADD_MESSAGE = gql`
   mutation AddMessage($collectionId: ID!, $content: String!) {
@@ -187,6 +204,7 @@ const EXPORT_FEEDS = gql`
 
 function HomePage({ theme, setTheme }) {
   const navigate = useNavigate();
+  
 
   // State
   const [selectedCollection, setSelectedCollection] = useState(null);
@@ -195,6 +213,7 @@ function HomePage({ theme, setTheme }) {
   const [articleFilters, setArticleFilters] = useState({});
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newFeedUrl, setNewFeedUrl] = useState("");
+  const [collections, setCollections] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingContent, setEditingContent] = useState('');
@@ -230,6 +249,8 @@ function HomePage({ theme, setTheme }) {
   const [markRead] = useMutation(MARK_READ_MUTATION, { onCompleted: () => refetchArticles() });
   const [markFav] = useMutation(MARK_FAV_MUTATION, { onCompleted: () => refetchArticles() });
   const [addComment] = useMutation(ADD_COMMENT, { onCompleted: () => refetchArticles() });
+  const [editCommentMutation] = useMutation(EDIT_COMMENT);
+  const [deleteCommentMutation] = useMutation(DELETE_COMMENT);
   const [addMessage] = useMutation(ADD_MESSAGE, { onCompleted: () => refetchCols() });
   const [addMember] = useMutation(ADD_MEMBER, {
     onCompleted: (data) => {
@@ -277,87 +298,35 @@ function HomePage({ theme, setTheme }) {
     }
   };
 
-  const handleUpdateComment = async (commentId) => {
-    try {
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
-        body: JSON.stringify({
-          query: `
-            mutation UpdateComment($commentId: ID!, $content: String!) {
-              updateComment(commentId: $commentId, content: $content) {
-                id
-                content
-              }
-            }
-          `,
-          variables: { commentId, content: editingContent },
-        }),
-      });
 
-      const json = await res.json();
+const handleEditComment = async (commentId) => {
+  if (!editingContent.trim()) return;
+  try {
+    const id = parseInt(commentId, 10); // conversion nécessaire
+    await editCommentMutation({
+      variables: { id, content: editingContent },
+    });
 
-      if (json.data) {
-        setCollections(prev =>
-          prev.map(col => ({
-            ...col,
-            articles: col.articles.map(art => ({
-              ...art,
-              comments: art.comments.map(c =>
-                c.id === commentId ? { ...c, content: editingContent } : c
-              )
-            }))
-          }))
-        );
+    setEditingCommentId(null);
+    setEditingContent('');
+    refetch(); 
+  } catch (err) {
+    console.error("Erreur lors de la modification", err);
+  }
+};
 
-        setEditingCommentId(null);
-        setEditingContent('');
-      }
-    } catch (err) {
-      console.error("Erreur modification :", err);
-    }
-  };
+const handleDeleteComment = async (commentId) => {
+  try {
+    const id = parseInt(commentId, 10);
+    await deleteCommentMutation({
+      variables: { id },
+    });
 
-  const handleDeleteComment = async (commentId) => {
-    try {
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
-        body: JSON.stringify({
-          query: `
-            mutation DeleteComment($commentId: ID!) {
-              deleteComment(commentId: $commentId)
-            }
-          `,
-          variables: { commentId },
-        }),
-      });
-
-      const json = await res.json();
-      if (json.data.deleteComment) {
-        setCollections(prev =>
-          prev.map(col => ({
-            ...col,
-            articles: col.articles.map(art => ({
-              ...art,
-              comments: art.comments.filter(c => c.id !== commentId)
-            }))
-          }))
-        );
-      }
-    } catch (err) {
-      console.error("Erreur suppression :", err);
-    }
-  };
-
-
-
+    refetch(); 
+  } catch (err) {
+    console.error("Erreur lors de la suppression", err);
+  }
+};
 
 
   const handleAddMessage = () => {
@@ -1102,104 +1071,36 @@ function HomePage({ theme, setTheme }) {
                       borderTop: '1px solid #e2e8f0',
                       paddingTop: '1rem'
                     }}>
-                      <h4 style={{
-                        color: '#2d3748',
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        marginBottom: '0.75rem'
-                      }}>Commentaires</h4>
-                      
-                      <div style={{
-                        marginBottom: '1rem',
-                        maxHeight: '150px',
-                        overflowY: 'auto'
-                      }}>
-                      {article.comments.map((c) => (
-                        <div key={c.id} style={{
-                          backgroundColor: '#f7fafc',
-                          padding: '0.75rem',
-                          borderRadius: '8px',
-                          marginBottom: '0.5rem',
-                          border: '1px solid #e2e8f0'
-                        }}>
-                          <div style={{ fontSize: '13px', lineHeight: '1.4' }}>
-                            <span style={{ fontWeight: '600', color: '#667eea', marginRight: '0.5rem' }}>
-                              {c.author.name}:
-                            </span>
-                            {editingCommentId === c.id ? (
-                              <>
-                                <input
-                                  type="text"
-                                  value={editingContent}
-                                  onChange={(e) => setEditingContent(e.target.value)}
-                                  style={{
-                                    fontSize: '12px',
-                                    padding: '4px',
-                                    width: '80%',
-                                    marginRight: '0.5rem',
-                                  }}
-                                />
-                                <button onClick={() => handleUpdateComment(c.id)} style={{
-                                  fontSize: '12px',
-                                  backgroundColor: '#38a169',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  padding: '2px 6px',
-                                  marginRight: '4px'
-                                }}>💾</button>
-                                <button onClick={() => {
-                                  setEditingCommentId(null);
-                                  setEditingContent('');
-                                }} style={{
-                                  fontSize: '12px',
-                                  backgroundColor: '#e53e3e',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  padding: '2px 6px'
-                                }}>✖️</button>
-                              </>
-                            ) : (
-                              <span style={{ color: '#4a5568' }}>
-                                {c.content}
-                              </span>
-                            )}
-                          </div>
-                          {c.author.id === user.id && editingCommentId !== c.id && (
-                            <div style={{ marginTop: '0.5rem' }}>
-                              <button 
-                                onClick={() => {
-                                  setEditingCommentId(c.id);
-                                  setEditingContent(c.content);
-                                }}
-                                style={{
-                                  marginRight: '0.5rem',
-                                  fontSize: '12px',
-                                  backgroundColor: '#edf2f7',
-                                  border: '1px solid #cbd5e0',
-                                  borderRadius: '4px',
-                                  padding: '2px 6px'
-                                }}
-                              >✏️ Modifier</button>
+<h4 style={{ color: '#2d3748', fontSize: '16px', fontWeight: '600', marginBottom: '0.75rem' }}>Commentaires</h4>
+<div style={{ marginBottom: '1rem', maxHeight: '150px', overflowY: 'auto' }}>
+  {article.comments.map((c) => (
+    <div key={c.id} style={{ backgroundColor: '#f7fafc', padding: '0.75rem', borderRadius: '8px', marginBottom: '0.5rem', border: '1px solid #e2e8f0' }}>
+      {editingCommentId === c.id ? (
+        <>
+          <input
+            value={editingContent}
+            onChange={(e) => setEditingContent(e.target.value)}
+            style={{ width: '100%', padding: '4px', marginBottom: '6px' }}
+          />
+          <button onClick={() => handleEditComment(c.id)} style={{ marginRight: '0.5rem' }}>✅ Enregistrer</button>
+          <button onClick={() => setEditingCommentId(null)}>❌ Annuler</button>
+        </>
+      ) : (
+        <>
+          <div style={{ fontSize: '13px', lineHeight: '1.4' }}>
+            <span style={{ fontWeight: '600', color: '#667eea', marginRight: '0.5rem' }}>{c.author.name}:</span>
+            <span style={{ color: '#4a5568' }}>{c.content}</span>
+          </div>
+          <div style={{ marginTop: '0.5rem' }}>
+            <button onClick={() => { setEditingCommentId(c.id); setEditingContent(c.content); }} style={{ marginRight: '0.5rem' }}>✏️ Modifier</button>
+            <button onClick={() => handleDeleteComment(c.id)}>🗑️ Supprimer</button>
+          </div>
+        </>
+      )}
+    </div>
+  ))}
+</div>
 
-                              <button 
-                                onClick={() => handleDeleteComment(c.id)}
-                                style={{
-                                  fontSize: '12px',
-                                  backgroundColor: '#edf2f7',
-                                  border: '1px solid #cbd5e0',
-                                  borderRadius: '4px',
-                                  padding: '2px 6px'
-                                }}
-                              >🗑️ Supprimer</button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-
-
-                      </div>
                       
                       <div style={{
                         display: 'flex',

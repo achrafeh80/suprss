@@ -156,7 +156,6 @@ function SettingsPage({ theme, setTheme, onLogout }) {
                   cursor: 'pointer'
                 }}
               >
-                <option value="SMALL">Petit</option>
                 <option value="MEDIUM">Moyen</option>
                 <option value="LARGE">Grand</option>
               </select>

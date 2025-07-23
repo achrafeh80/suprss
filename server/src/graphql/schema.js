@@ -116,8 +116,8 @@ const typeDefs = gql`
     addComment(collectionId: ID!, articleId: ID!, content: String!): Comment!
     addMessage(collectionId: ID!, content: String!): Message!
 
-    updateComment(commentId: ID!, content: String!): Comment!
-    deleteComment(commentId: ID!): Boolean!
+    editComment(id: Int!, content: String!): Comment!
+    deleteComment(id: Int!): Comment!
 
 
     addMember(collectionId: ID!, userEmail: String!, role: Role = MEMBER): CollectionMember!

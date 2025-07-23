@@ -47,6 +47,7 @@ app.get('/auth/microsoft/callback', passport.authenticate('microsoft', { session
   res.redirect(`${FRONTEND_URL}/#token=${token}`);
 });
 
+
 // Initialise Apollo Server pour GraphQL
 async function startServer() {
   const server = new ApolloServer({
