@@ -296,6 +296,12 @@ const resolvers = {
       });
       // On peut en outre filtrer par pertinence ou autre, mais on se contente de renvoyer les résultats
       return articles;
+    },
+    allUsers: async (_, __, { user }) => {
+      if (!user || user.role !== 'ADMIN') {
+        throw new Error('Not authorized');
+      }
+      return User.find({});
     }
   },
 
@@ -383,19 +389,48 @@ const resolvers = {
       return collection;
     },
     deleteCollection: async (parent, { id }, { prisma, user }) => {
-      if (!user) throw new Error("Authentification requise.");
-      const collectionId = Number(id);
-      // Vérifie que l'utilisateur est owner
-      const membership = await prisma.collectionMembership.findUnique({
-        where: { userId_collectionId: { userId: user.id, collectionId } }
-      });
-      if (!membership || membership.role !== 'OWNER') {
-        throw new Error("Seul le propriétaire peut supprimer la collection.");
+  if (!user) throw new Error("Authentification requise.");
+
+  const collectionId = Number(id);
+
+  const membership = await prisma.collectionMembership.findUnique({
+    where: { userId_collectionId: { userId: user.id, collectionId } }
+  });
+
+  if (!membership || membership.role !== 'OWNER') {
+    throw new Error("Seul le propriétaire peut supprimer la collection.");
+  }
+
+  // Supprime les messages liés
+  await prisma.message.deleteMany({ where: { collectionId } });
+
+  // Supprime les commentaires liés à cette collection
+  const feedIds = await prisma.collectionFeed.findMany({
+    where: { collectionId },
+    select: { feedId: true }
+  }).then(f => f.map(e => e.feedId));
+
+  await prisma.comment.deleteMany({
+    where: {
+      article: {
+        feedId: { in: feedIds }
       }
-      // Supprime la collection (les contraintes on delete cascade supprimeront les liens)
-      await prisma.collection.delete({ where: { id: collectionId } });
-      return true;
-    },
+    }
+  });
+
+  // Supprime les liens collection-feed
+  await prisma.collectionFeed.deleteMany({ where: { collectionId } });
+
+  // Supprime les memberships
+  await prisma.collectionMembership.deleteMany({ where: { collectionId } });
+
+  // Supprime la collection
+  await prisma.collection.delete({ where: { id: collectionId } });
+
+  return true;
+}
+,
+
     addFeed: async (parent, { collectionId, url }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
       const colId = Number(collectionId);
@@ -639,7 +674,112 @@ const resolvers = {
         });
       },
 
+changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
+  if (!user) throw new Error("Authentification requise.");
 
+  const userInDb = await prisma.user.findUnique({ where: { id: user.id } });
+  if (!userInDb || !userInDb.password) throw new Error("Mot de passe introuvable.");
+
+  const valid = await bcrypt.compare(oldPassword, userInDb.password);
+  if (!valid) throw new Error("Ancien mot de passe incorrect.");
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashed }
+  });
+
+  return true;
+},
+
+    // Delete own account
+    deleteAccount: async (_, __, { prisma, user }) => {
+  if (!user) throw new Error("Authentification requise.");
+  const userId = user.id;
+
+  // Supprimer les messages de l'utilisateur
+  await prisma.message.deleteMany({ where: { authorId: userId } });
+
+  // Supprimer les commentaires de l'utilisateur
+  await prisma.comment.deleteMany({ where: { authorId: userId } });
+
+  // Supprimer les statuts d'articles de l'utilisateur
+  await prisma.articleStatus.deleteMany({ where: { userId } });
+
+  // Supprimer les appartenances aux collections
+  await prisma.collectionMembership.deleteMany({ where: { userId } });
+
+  // Supprimer les collections dont il est propriétaire
+  const ownedCollections = await prisma.collection.findMany({
+    where: { ownerId: userId }
+  });
+
+  for (const col of ownedCollections) {
+    const collectionId = col.id;
+
+    // Supprimer les messages associés à la collection
+    await prisma.message.deleteMany({ where: { collectionId } });
+
+    // Supprimer les commentaires des articles des feeds liés à la collection
+    const feedIds = await prisma.collectionFeed.findMany({
+      where: { collectionId },
+      select: { feedId: true }
+    }).then(r => r.map(f => f.feedId));
+
+    if (feedIds.length > 0) {
+      await prisma.comment.deleteMany({
+        where: {
+          article: {
+            feedId: { in: feedIds }
+          }
+        }
+      });
+    }
+
+    // Supprimer les liaisons feed <-> collection
+    await prisma.collectionFeed.deleteMany({ where: { collectionId } });
+
+    // Supprimer les membres
+    await prisma.collectionMembership.deleteMany({ where: { collectionId } });
+
+    // Supprimer la collection elle-même
+    await prisma.collection.delete({ where: { id: collectionId } });
+  }
+
+  // Supprimer l'utilisateur
+  await prisma.user.delete({ where: { id: userId } });
+
+  return true;
+},
+
+    deleteUser: async (_, { userId }, { user }) => {
+      if (!user || user.role !== 'ADMIN') throw new Error('Not authorized');
+      const targetUser = await User.findById(userId);
+      if (!targetUser) throw new Error('User not found');
+      // Prevent deleting self via this, if desired:
+      if (targetUser.id.toString() === user.id.toString()) {
+        throw new Error('Admin cannot delete their own account via this');
+      }
+      // Clean up target user's data similar to deleteAccount
+      const uid = targetUser._id;
+      const ownedCollections = await Collection.find({ owner: uid });
+      for (let coll of ownedCollections) {
+        await Feed.deleteMany({ collection: coll._id });
+        await Article.deleteMany({ /* remove coll's articles */ });
+        await Comment.deleteMany({ /* remove coll's comments if needed */ });
+        await Collection.deleteOne({ _id: coll._id });
+      }
+      await Collection.updateMany(
+        { "members.user": uid },
+        { $pull: { members: { user: uid } } }
+      );
+      await Comment.deleteMany({ author: uid });
+      await ReadStatus.deleteMany({ user: uid });
+      await Favorite.deleteMany({ user: uid });
+      await User.deleteOne({ _id: uid });
+      return true;
+    },
+    
 
     addMember: async (parent, { collectionId, userEmail, role }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");

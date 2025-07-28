@@ -13,6 +13,16 @@ const GET_ME = gql`
     }
   }
 `;
+  const CHANGE_PASSWORD = gql`
+    mutation ChangePassword($oldPass: String!, $newPass: String!) {
+      changePassword(oldPassword: $oldPass, newPassword: $newPass)
+    }
+  `;
+  const DELETE_ACCOUNT = gql`
+    mutation DeleteAccount {
+      deleteAccount
+    }
+  `;
 
 const UPDATE_SETTINGS = gql`
   mutation UpdateSettings($darkMode: Boolean, $fontSize: FontSize) {
@@ -24,17 +34,24 @@ const UPDATE_SETTINGS = gql`
   }
 `;
 
-function SettingsPage({ theme, setTheme, onLogout }) {
+function SettingsPage({ onLogout }) {
   const navigate = useNavigate();
   const { data, loading } = useQuery(GET_ME);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  const [form, setForm] = useState({darkMode: false,fontSize: 16});
+  const [fontSize, setFontSize] = useState(parseInt(localStorage.getItem('fontSize') || '16'));
+  const [changePassword] = useMutation(CHANGE_PASSWORD);
+  const [deleteAccount] = useMutation(DELETE_ACCOUNT);
   const [updateSettings] = useMutation(UPDATE_SETTINGS);
-  const [form, setForm] = useState({ darkMode: theme.darkMode, fontSize: theme.fontSize });
 
   useEffect(() => {
     if (data && data.me) {
       setForm({ darkMode: data.me.darkMode, fontSize: data.me.fontSize });
       // Appliquer les préférences actuelles de l'utilisateur dans le thème global
-      setTheme({ darkMode: data.me.darkMode, fontSize: data.me.fontSize });
+      setTheme(data.me.darkMode ? 'dark' : 'light');
+      setFontSize(parseInt(data.me.fontSize));
     }
   }, [data, setTheme]);
 
@@ -56,23 +73,62 @@ function SettingsPage({ theme, setTheme, onLogout }) {
     color: '#e74c3c'
   }}>Utilisateur non chargé.</div>;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await updateSettings({ variables: form });
-      if (res.data.updateSettings) {
-        // mettre à jour le thème global
-        setTheme({ darkMode: res.data.updateSettings.darkMode, fontSize: res.data.updateSettings.fontSize });
-      }
-    } catch (err) {
-      console.error("Erreur sauvegarde paramètres:", err);
-    }
-  };
 
   const handleLogout = () => {
     if (onLogout) onLogout();
     navigate('/login');
   };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    if (!oldPassword || !newPassword) return;
+    try {
+      await changePassword({ variables: { oldPass: oldPassword, newPass: newPassword } });
+      alert('Password changed successfully.');
+      setOldPassword(''); setNewPassword('');
+    } catch (err) {
+      alert('Failed to change password: ' + err.message);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (window.confirm('Are you sure you want to permanently delete your account?')) {
+      try {
+        await deleteAccount();
+        // Clear local data and redirect to login
+        localStorage.clear();
+        window.location.href = '/login';
+      } catch (err) {
+        alert('Failed to delete account: ' + err.message);
+      }
+    }
+  };
+
+  const handleThemeToggle = async (newTheme) => {
+    setTheme(newTheme);
+    // Update localStorage and body class
+    localStorage.setItem('theme', newTheme);
+    if (newTheme === 'dark') document.body.classList.add('dark-theme');
+    else document.body.classList.remove('dark-theme');
+    // Save to server preferences
+    try {
+      await updateSettings({ variables: { theme: newTheme } });
+    } catch (err) {
+      console.error('Failed to update theme on server');
+    }
+  };
+
+  const handleFontSizeChange = async (size) => {
+    setFontSize(size);
+    localStorage.setItem('fontSize', size.toString());
+    document.body.style.fontSize = size + 'px';
+    try {
+      await updateSettings({ variables: { fontSize: size } });
+    } catch (err) {
+      console.error('Failed to update font size on server');
+    }
+  };
+
 
   return (
     <div style={{
@@ -98,91 +154,40 @@ function SettingsPage({ theme, setTheme, onLogout }) {
           fontWeight: '700'
         }}>Paramètres de {data.me.name || data.me.email}</h1>
         
-        <form onSubmit={handleSubmit}>
-          <div style={{
-            marginBottom: '24px',
-            padding: '16px',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '8px',
-            border: '1px solid #e9ecef'
-          }}>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              fontSize: '16px',
-              color: '#333'
-            }}>
-              <input 
-                type="checkbox" 
-                checked={form.darkMode} 
-                onChange={e => setForm({ ...form, darkMode: e.target.checked })}
-                style={{
-                  marginRight: '12px',
-                  width: '18px',
-                  height: '18px',
-                  cursor: 'pointer'
-                }}
-              />
-              Mode sombre
-            </label>
+<div className="settings-page">
+      <h2>Settings</h2>
+      <div>
+        <h3>Appearance</h3>
+        <label>
+          Theme:
+          <select value={theme} onChange={e => handleThemeToggle(e.target.value)}>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+        <label>
+          Font Size:
+          <select value={fontSize} onChange={e => handleFontSizeChange(parseInt(e.target.value))}>
+            <option value="14">Small</option>
+            <option value="16">Medium</option>
+            <option value="20">Large</option>
+          </select>
+        </label>
+      </div>
+      <div>
+        <h3>Account</h3>
+        <form onSubmit={handlePasswordChange}>
+          <div>
+            <label>Current Password: <input type="password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} required /></label>
           </div>
-          
-          <div style={{
-            marginBottom: '32px',
-            padding: '16px',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '8px',
-            border: '1px solid #e9ecef'
-          }}>
-            <label style={{
-              display: 'block',
-              fontSize: '16px',
-              color: '#333',
-              fontWeight: '600'
-            }}>
-              Taille du texte :
-              <select 
-                value={form.fontSize} 
-                onChange={e => setForm({ ...form, fontSize: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '2px solid #e1e5e9',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  marginTop: '8px',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="MEDIUM">Moyen</option>
-                <option value="LARGE">Grand</option>
-              </select>
-            </label>
+          <div>
+            <label>New Password: <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required /></label>
           </div>
-          
-          <button 
-            type="submit"
-            style={{
-              width: '100%',
-              padding: '14px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'background-color 0.3s ease',
-              marginBottom: '16px'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#218838'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#28a745'}
-          >
-            Enregistrer
-          </button>
+          <button type="submit">Change Password</button>
         </form>
+        <button className="delete-account-btn" onClick={handleDeleteAccount}>Delete Account</button>
+      </div>
+    </div>
         
         <div style={{
           display: 'flex',

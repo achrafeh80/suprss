@@ -97,6 +97,7 @@ const typeDefs = gql`
     collection(id: ID!): Collection
     feeds: [Feed!]!                         # Tous les flux suivis par l'utilisateur (tous collections confondues)
     searchArticles(query: String!): [Article!]!   # Recherche plein texte globale dans les titres/contenus
+    allUsers: [User!]!
   }
 
   type Mutation {
@@ -125,6 +126,10 @@ const typeDefs = gql`
 
     importFeeds(opml: String!): Boolean!      # Importer des flux depuis un texte OPML
     exportFeeds(format: String!): String!     # Exporter les abonnements (format: "opml", "json", "csv")
+
+    changePassword(oldPassword: String!, newPassword: String!): Boolean
+    deleteAccount: Boolean
+    deleteUser(userId: ID!): Boolean
   }
 
   type AuthPayload {

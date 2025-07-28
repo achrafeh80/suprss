@@ -215,6 +215,7 @@ function HomePage({ theme, setTheme }) {
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [collections, setCollections] = useState([]);
   const [newComment, setNewComment] = useState("");
+  const [errorMessage, setErrorMessage] = useState(null);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingContent, setEditingContent] = useState('');
   const [newMessage, setNewMessage] = useState("");
@@ -274,9 +275,18 @@ function HomePage({ theme, setTheme }) {
     }
   };
 
-  const handleDeleteCollection = (id) => {
-    deleteCollection({ variables: { id } });
-  };
+const handleDeleteCollection = (id) => {
+  deleteCollection({ 
+    variables: { id },
+  })
+  .then(() => {
+    alert(null); // reset si succès
+  })
+  .catch((error) => {
+    alert(error.message); // affiche message
+  });
+};
+
 
   const handleAddFeed = () => {
     if (newFeedUrl.trim() && selectedCollection) {
@@ -555,6 +565,11 @@ const handleDeleteComment = async (commentId) => {
                   >
                     🗑️
                   </button>
+                  {errorMessage && (
+                    <div className="text-red-600 mt-2 text-sm font-medium">
+                      {errorMessage}
+                    </div>
+                  )}
                 </div>
                 
                 {/* FEEDS */}
