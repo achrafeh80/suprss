@@ -274,6 +274,18 @@ const resolvers = {
       }
       return Object.values(feedsMap);
     },
+    allTags: async () => {
+    const feeds = await Feed.find();
+    const tags = new Set();
+    feeds.forEach(f => (f.tags || []).forEach(t => tags.add(t)));
+    return Array.from(tags);
+    },
+    allCategories: async () => {
+      const feeds = await Feed.find();
+      const cats = new Set();
+      feeds.forEach(f => (f.categories || []).forEach(c => cats.add(c)));
+      return Array.from(cats);
+    },
     searchArticles: async (parent, { query }, { prisma, user }) => {
       if (!user) return [];
       if (!query || query.trim() === "") return [];
@@ -428,10 +440,9 @@ const resolvers = {
   await prisma.collection.delete({ where: { id: collectionId } });
 
   return true;
-}
-,
+},
 
-    addFeed: async (parent, { collectionId, url }, { prisma, user }) => {
+    addFeed: async (parent, { collectionId, url, title,tags, categories }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
       const colId = Number(collectionId);
       // Vérifie que user est membre de la collection (et idéalement autorisé à ajouter un feed)
@@ -447,8 +458,18 @@ const resolvers = {
       }
       // Vérifie si le flux existe déjà en base (globalement)
       let feed = await prisma.feed.findUnique({ where: { url } });
+      // Si le feed existe déjà et qu'on passe tags ou categories → on les met à jour
+        if (feed && (tags || categories)) {
+          feed = await prisma.feed.update({
+            where: { id: feed.id },
+            data: {
+              tags: tags || feed.tags,
+              categories: categories || feed.categories
+            }
+          });
+        }
+
       if (!feed) {
-        // Parser le flux RSS pour obtenir les infos
         try {
           const parsed = await parser.parseURL(url);
           feed = await prisma.feed.create({
@@ -456,12 +477,14 @@ const resolvers = {
               title: parsed.title || url,
               url,
               description: parsed.description || "",
-              tags: [],           // On pourrait déduire des tags du flux plus tard
+              tags: tags || [],
+              categories: categories || [], 
               status: 'active',
               updateInterval: 60,
               lastFetched: new Date(),
             }
           });
+           
           // Insère les articles initiaux du flux
           const items = parsed.items || [];
           for (let item of items) {
@@ -494,6 +517,15 @@ const resolvers = {
           console.error("Échec du parsing RSS:", err.message);
           throw new Error("Impossible d'ajouter le flux (URL invalide ou flux inatteignable).");
         }
+      }else {
+        // Si le feed existe déjà, on peut mettre à jour les tags et catégories
+        feed = await prisma.feed.update({
+          where: { id: feed.id },
+          data: {
+            tags: tags || feed.tags,
+            categories: categories || feed.categories
+          }
+        });
       }
       // Maintenant associer ce feed à la collection (sauf si déjà présent)
       try {
@@ -509,10 +541,22 @@ const resolvers = {
       // Mettre isShared = true sur la collection si plus d'un membre (optionnel)
       const memberCount = await prisma.collectionMembership.count({ where: { collectionId: colId } });
       if (memberCount > 1) {
-        await prisma.collection.update({ where: { id: colId }, data: { isShared: true } });
+        await prisma.collection.update({ where: { id: colId }, 
+          data: {       
+            tags: tags || [],
+            categories: categories || [],} });
       }
       return feed;
     },
+    updateFeed: async (_, { feedId, title, tags, categories }, { user }) => {
+      const feed = await Feed.findById(feedId);
+      if (title !== undefined) feed.title = title;
+      if (tags !== undefined) feed.tags = tags;              
+      if (categories !== undefined) feed.categories = categories; 
+      await feed.save();
+      return feed;
+    }
+    ,
     removeFeed: async (parent, { collectionId, feedId }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
       const colId = Number(collectionId);

@@ -58,6 +58,7 @@ const typeDefs = gql`
     url: String!
     description: String
     tags: [String!]!
+    categories: [String!]!
     status: String!
     updateInterval: Int!
     lastFetched: DateTime
@@ -98,17 +99,20 @@ const typeDefs = gql`
     feeds: [Feed!]!                         # Tous les flux suivis par l'utilisateur (tous collections confondues)
     searchArticles(query: String!): [Article!]!   # Recherche plein texte globale dans les titres/contenus
     allUsers: [User!]!
+    allTags: [String!]!
+    allCategories: [String!]!
   }
 
   type Mutation {
     register(email: String!, password: String!, name: String): AuthPayload
     login(email: String!, password: String!): AuthPayload
-    updateSettings(darkMode: Boolean, fontSize: FontSize): User!
+    updateSettings(darkMode: String!, fontSize: FontSize): User!
 
     createCollection(name: String!): Collection!
     deleteCollection(id: ID!): Boolean!
 
-    addFeed(collectionId: ID!, url: String!): Feed!
+    addFeed(collectionId: ID!, url: String!, title: String,tags: [String!], categories: [String!] ): Feed!
+    updateFeed(feedId: ID!, title: String, tags: [String!], categories: [String!]): Feed
     removeFeed(collectionId: ID!, feedId: ID!): Boolean!
 
     markArticleRead(articleId: ID!, read: Boolean!): Article!

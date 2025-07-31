@@ -25,7 +25,7 @@ const GET_ME = gql`
   `;
 
 const UPDATE_SETTINGS = gql`
-  mutation UpdateSettings($darkMode: Boolean, $fontSize: FontSize) {
+  mutation UpdateSettings($darkMode: String, $fontSize: FontSize) {
     updateSettings(darkMode: $darkMode, fontSize: $fontSize) {
       id
       darkMode
@@ -104,30 +104,33 @@ function SettingsPage({ onLogout }) {
     }
   };
 
-  const handleThemeToggle = async (newTheme) => {
-    setTheme(newTheme);
-    // Update localStorage and body class
-    localStorage.setItem('theme', newTheme);
-    if (newTheme === 'dark') document.body.classList.add('dark-theme');
-    else document.body.classList.remove('dark-theme');
-    // Save to server preferences
-    try {
-      await updateSettings({ variables: { theme: newTheme } });
-    } catch (err) {
-      console.error('Failed to update theme on server');
-    }
-  };
+const handleThemeToggle = async (newTheme) => {
+  setTheme(newTheme);
+  const isDark = newTheme === 'dark';
+  localStorage.setItem('theme', newTheme);
+  if (isDark) document.body.classList.add('dark-theme');
+  else document.body.classList.remove('dark-theme');
 
-  const handleFontSizeChange = async (size) => {
-    setFontSize(size);
-    localStorage.setItem('fontSize', size.toString());
-    document.body.style.fontSize = size + 'px';
-    try {
-      await updateSettings({ variables: { fontSize: size } });
-    } catch (err) {
-      console.error('Failed to update font size on server');
-    }
-  };
+  try {
+    await updateSettings({ variables: { darkMode: isDark } }); // "true" ou "false" string !
+  } catch (err) {
+    console.error('Failed to update theme on server', err);
+  }
+};
+
+
+const handleFontSizeChange = async (size) => {
+  setFontSize(size);
+  localStorage.setItem('fontSize', size.toString());
+  document.body.style.fontSize = size + 'px';
+
+  try {
+    await updateSettings({ variables: { fontSize: size } });
+  } catch (err) {
+    console.error('Failed to update font size on server', err);
+  }
+};
+
 
 
   return (

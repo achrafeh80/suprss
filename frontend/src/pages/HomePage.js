@@ -13,7 +13,7 @@ const GET_COLLECTIONS = gql`
       id
       name
       isShared
-      feeds { id title }
+      feeds { id title tags categories}
       members {
         user { id email name }
         role
@@ -109,10 +109,12 @@ const DELETE_COLLECTION = gql`
 `;
 
 const ADD_FEED = gql`
-  mutation AddFeed($collectionId: ID!, $url: String!) {
-    addFeed(collectionId: $collectionId, url: $url) {
+  mutation AddFeed($collectionId: ID!, $url: String!, $title: String, $tags: [String!], $categories: [String!]) {
+    addFeed(collectionId: $collectionId, url: $url, title: $title, tags: $tags, categories: $categories) {
       id
       title
+      tags
+      categories
     }
   }
 `;
@@ -197,6 +199,8 @@ const EXPORT_FEEDS = gql`
     exportFeeds(format: $format)
   }
 `;
+const GET_TAGS = gql`query { allTags }`;
+const GET_CATEGORIES = gql`query { allCategories }`;
 
 // ----------------------
 // React Component
@@ -221,6 +225,10 @@ function HomePage({ theme, setTheme }) {
   const [newMessage, setNewMessage] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("MEMBER");
+  const [tagInput, setTagInput] = useState("");
+  const [categoryInput, setCategoryInput] = useState("");
+  const [tags, setTags] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   // Queries
   const { data: collectionsData, loading: loadingCols, refetch: refetchCols } = useQuery(GET_COLLECTIONS);
@@ -267,6 +275,9 @@ function HomePage({ theme, setTheme }) {
   const [removeMember] = useMutation(REMOVE_MEMBER, { onCompleted: () => refetchCols() });
   const [exportFeeds] = useMutation(EXPORT_FEEDS);
 
+  const { data: tagData } = useQuery(GET_TAGS);
+  const { data: categoryData } = useQuery(GET_CATEGORIES);
+
   // Handlers
   const handleCreateCollection = () => {
     if (newCollectionName.trim()) {
@@ -280,20 +291,38 @@ const handleDeleteCollection = (id) => {
     variables: { id },
   })
   .then(() => {
-    alert(null); // reset si succès
+    console.log("Collection supprimée avec succès.");
   })
   .catch((error) => {
-    alert(error.message); // affiche message
+    alert(error.message); 
   });
 };
 
-
-  const handleAddFeed = () => {
-    if (newFeedUrl.trim() && selectedCollection) {
-      addFeed({ variables: { collectionId: selectedCollection, url: newFeedUrl } });
-      setNewFeedUrl("");
-    }
+  const addTag = (t) => {
+  if (!tags.includes(t)) setTags([...tags, t]);
+  setTagInput("");
   };
+  const addCategory = (c) => {
+    if (!categories.includes(c)) setCategories([...categories, c]);
+    setCategoryInput("");
+  };
+
+
+const handleAddFeed = () => {
+  if (newFeedUrl.trim() && selectedCollection) {
+    addFeed({ variables: {
+      collectionId: selectedCollection,
+      url: newFeedUrl,
+      title: newFeedUrl,
+      tags: tagInput,
+      categories: categoryInput,
+    } });
+    setNewFeedUrl("");
+    setTags([]);
+    setCategories([]);
+  }
+};
+
 
   const handleRemoveFeed = (feedId) => {
     if (selectedCollection) {
@@ -312,7 +341,7 @@ const handleDeleteCollection = (id) => {
 const handleEditComment = async (commentId) => {
   if (!editingContent.trim()) return;
   try {
-    const id = parseInt(commentId, 10); // conversion nécessaire
+    const id = parseInt(commentId, 10); 
     await editCommentMutation({
       variables: { id, content: editingContent },
     });
@@ -332,7 +361,9 @@ const handleDeleteComment = async (commentId) => {
       variables: { id },
     });
 
-    refetch(); 
+    await refetch(); 
+    console.log(`Commentaire ${id} supprimé avec succès.`);
+
   } catch (err) {
     console.error("Erreur lors de la suppression", err);
   }
@@ -522,7 +553,7 @@ const handleDeleteComment = async (commentId) => {
           </div>
 
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {collectionsData.collections.map((col) => (
+            {(collectionsData?.collections || []).map((col) => (
               <li key={col.id} style={{
                 marginBottom: '0.5rem',
                 border: '1px solid #e2e8f0',
@@ -603,7 +634,7 @@ const handleDeleteComment = async (commentId) => {
                       </button>
                     </li>
 
-                    {col.feeds.map((feed) => (
+                    {col?.feeds?.map((feed) => (
                       <li key={feed.id} style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -627,6 +658,14 @@ const handleDeleteComment = async (commentId) => {
                           }}
                         >
                           {feed.title}
+                          <div>
+                            {Array.isArray(feed.tags) && feed.tags.map(t => (
+                              <span className="tag" key={t}>#{t}</span>
+                            ))}
+                            {Array.isArray(feed.categories) && feed.categories.map(c => (
+                              <span className="category" key={c}>[{c}]</span>
+                            ))}
+                          </div>
                         </button>
                         <button 
                           onClick={() => handleRemoveFeed(feed.id)}
@@ -643,6 +682,7 @@ const handleDeleteComment = async (commentId) => {
                         </button>
                       </li>
                     ))}
+
                   </ul>
 
                     
@@ -661,6 +701,13 @@ const handleDeleteComment = async (commentId) => {
                           outline: 'none'
                         }}
                       />
+                      <input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="Ajouter tag..." />
+                      <ul>{tagData?.allTags?.filter(t => t.startsWith(tagInput)).map(t => <li onClick={() => addTag(t)}>{t}</li>)}</ul>
+                      <div>{tags.map(t => <span>{t}</span>)}</div>
+
+                      <input value={categoryInput} onChange={e => setCategoryInput(e.target.value)} placeholder="Ajouter catégorie..." />
+                      <ul>{categoryData?.allCategories?.filter(c => c.startsWith(categoryInput)).map(c => <li onClick={() => addCategory(c)}>{c}</li>)}</ul>
+                      <div>{categories.map(c => <span>{c}</span>)}</div>
                       <button 
                         onClick={handleAddFeed}
                         style={{
@@ -967,6 +1014,29 @@ const handleDeleteComment = async (commentId) => {
               }}>
                 Articles – {articlesData.collection.name}
               </h2>
+
+{selectedFeed && (() => {
+  const feedInfo = collectionsData?.collections
+    ?.find(col => col.id === selectedCollection)
+    ?.feeds?.find(f => f.id === selectedFeed);
+
+  return feedInfo ? (
+    <div style={{ marginBottom: '1rem' }}>
+      <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Flux : {feedInfo.title}</h3>
+      <div style={{ marginBottom: '0.25rem' }}>
+        Tags : {(feedInfo.tags || []).map((t, i) => (
+          <span key={i} style={{ marginRight: '0.5rem', color: '#667eea' }}>#{t}</span>
+        ))}
+      </div>
+      <div>
+        Catégories : {(feedInfo.categories || []).map((c, i) => (
+          <span key={i} style={{ marginRight: '0.5rem', color: '#805ad5' }}>[{c}]</span>
+        ))}
+      </div>
+    </div>
+  ) : null;
+})()}
+
               
               <div style={{
                 display: 'grid',

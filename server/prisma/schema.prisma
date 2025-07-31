@@ -72,7 +72,8 @@ model Feed {
   title          String
   url            String   @unique
   description    String?
-  tags           String[] @default([])  // Tags/catégories associées au flux
+  tags           String[] 
+  categories     String[] 
   status         String   @default("active") // statut (ex: active/inactive)
   updateInterval Int      @default(60)       // Fréquence de mise à jour en minutes
   lastFetched    DateTime?
@@ -130,7 +131,7 @@ model Comment {
 model Message {
   id           Int        @id @default(autoincrement())
   content      String
-  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  collection   Collection @relation(fields: [collectionId], references: [id])
   collectionId Int
   author       User       @relation(fields: [authorId], references: [id])
   authorId     Int
