@@ -119,6 +119,17 @@ const ADD_FEED = gql`
   }
 `;
 
+const UPDATE_FEED = gql`
+  mutation UpdateFeed($feedId: ID!, $title: String, $tags: [String!], $categories: [String!]) {
+    updateFeed(feedId: $feedId, title: $title, tags: $tags, categories: $categories) {
+      id
+      title
+      tags
+      categories
+    }
+  }
+`;
+
 const REMOVE_FEED = gql`
   mutation RemoveFeed($collectionId: ID!, $feedId: ID!) {
     removeFeed(collectionId: $collectionId, feedId: $feedId)
@@ -229,6 +240,10 @@ function HomePage({ theme, setTheme }) {
   const [categoryInput, setCategoryInput] = useState("");
   const [tags, setTags] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [editingFeedId, setEditingFeedId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editTags, setEditTags] = useState('');
+  const [editCategories, setEditCategories] = useState('');
 
   // Queries
   const { data: collectionsData, loading: loadingCols, refetch: refetchCols } = useQuery(GET_COLLECTIONS);
@@ -322,6 +337,15 @@ const handleAddFeed = () => {
     setCategories([]);
   }
 };
+
+
+const [updateFeed] = useMutation(UPDATE_FEED, {
+  onCompleted: () => {
+    setEditingFeedId(null);
+    refetchCols(); // ou remets à jour localement
+  },
+  onError: (err) => alert('Erreur : ' + err.message)
+});
 
 
   const handleRemoveFeed = (feedId) => {
@@ -471,23 +495,45 @@ const handleDeleteComment = async (commentId) => {
           fontWeight: '700',
           letterSpacing: '0.1em'
         }}>SUPRSS</h1>
-        <button 
-          onClick={() => navigate("/settings")}
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: 'none',
-            color: 'white',
-            padding: '0.5rem 1rem',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            fontSize: '14px'
-          }}
-          onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
-          onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
-        >
-          ⚙️ Paramètres
-        </button>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              onClick={() => navigate("/admin")}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                fontSize: '14px'
+              }}
+              onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+              onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+            >
+              🛠️ Admin Page
+            </button>
+
+            <button 
+              onClick={() => navigate("/settings")}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                fontSize: '14px'
+              }}
+              onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+              onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+            >
+              ⚙️ Paramètres
+            </button>
+          </div>
+
       </header>
 
       <div style={{
@@ -667,6 +713,12 @@ const handleDeleteComment = async (commentId) => {
                             ))}
                           </div>
                         </button>
+                        <button onClick={() => {
+                            setEditingFeedId(feed.id);
+                            setEditTitle(feed.title);
+                            setEditTags(feed.tags?.join(', ') || '');
+                            setEditCategories(feed.categories?.join(', ') || '');
+                          }}>✏️</button>
                         <button 
                           onClick={() => handleRemoveFeed(feed.id)}
                           style={{
@@ -680,9 +732,37 @@ const handleDeleteComment = async (commentId) => {
                         >
                           🗑️
                         </button>
+                        {/* edit feed form */}
+                        {editingFeedId === feed.id && (
+                            <div className="edit-form">
+                              <input
+                                value={editTitle}
+                                onChange={e => setEditTitle(e.target.value)}
+                                placeholder="Nouveau titre"
+                              />
+                              <input
+                                value={editTags}
+                                onChange={e => setEditTags(e.target.value)}
+                                placeholder="Tags (séparés par des virgules)"
+                              />
+                              <input
+                                value={editCategories}
+                                onChange={e => setEditCategories(e.target.value)}
+                                placeholder="Catégories (séparées par des virgules)"
+                              />
+                              <button onClick={() => updateFeed({
+                                variables: {
+                                  feedId: feed.id,
+                                  title: editTitle,
+                                  tags: (editTags || '').split(',').map(t => t.trim()).filter(Boolean),
+                                  categories: (editCategories || '').split(',').map(c => c.trim()).filter(Boolean)
+                                }
+                              })}>💾 Enregistrer</button>
+                              <button onClick={() => setEditingFeedId(null)}>❌ Annuler</button>
+                            </div>
+                          )} 
                       </li>
                     ))}
-
                   </ul>
 
                     

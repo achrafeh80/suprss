@@ -548,14 +548,27 @@ const resolvers = {
       }
       return feed;
     },
-    updateFeed: async (_, { feedId, title, tags, categories }, { user }) => {
-      const feed = await Feed.findById(feedId);
-      if (title !== undefined) feed.title = title;
-      if (tags !== undefined) feed.tags = tags;              
-      if (categories !== undefined) feed.categories = categories; 
-      await feed.save();
-      return feed;
-    }
+updateFeed: async (parent, { feedId, title, tags, categories }, { prisma,user }) => {
+  if (!user) throw new Error("Non authentifié");
+  const feed = await Feed.findById(feedId).populate('collection');
+  if (!feed) throw new Error("Flux introuvable");
+
+  const collection = feed.collection;
+
+  const isOwner = collection.owner.toString() === user.id;
+  const isMember = collection.members?.some?.(m => m.user.toString() === user.id && m.privileges.includes('WRITE'));
+
+  if (!isOwner && !isMember) {
+    throw new Error("Accès refusé");
+  }
+
+  if (title !== undefined) feed.title = title;
+  if (tags !== undefined) feed.tags = tags;
+  if (categories !== undefined) feed.categories = categories;
+
+  await feed.save();
+  return feed;
+}
     ,
     removeFeed: async (parent, { collectionId, feedId }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
