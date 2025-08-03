@@ -518,10 +518,22 @@ const handleDeleteMessage = async (id) => {
       justifyContent: 'center',
       alignItems: 'center',
       height: '100vh',
-      fontSize: '18px',
-      color: '#666'
+      fontSize: '20px',
+      fontWeight: '500',
+      color: '#4A5568',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
-      Vérification de la session...
+      <div style={{
+        background: 'rgba(255,255,255,0.95)',
+        padding: '2rem 3rem',
+        borderRadius: '20px',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255,255,255,0.2)'
+      }}>
+        ✨ Vérification de la session...
+      </div>
     </div>
   );
 
@@ -531,58 +543,103 @@ const handleDeleteMessage = async (id) => {
     justifyContent: 'center',
     alignItems: 'center',
     height: '100vh',
-    fontSize: '18px',
-    color: '#666'
-  }}>Chargement collections...</div>;
+    fontSize: '20px',
+    fontWeight: '500',
+    color: '#4A5568',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  }}>
+    <div style={{
+      background: 'rgba(255,255,255,0.95)',
+      padding: '2rem 3rem',
+      borderRadius: '20px',
+      boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255,255,255,0.2)'
+    }}>
+      📚 Chargement collections...
+    </div>
+  </div>;
   
   if (loadingArts) return <div style={{
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     height: '100vh',
-    fontSize: '18px',
-    color: '#666'
-  }}>Chargement articles...</div>;
+    fontSize: '20px',
+    fontWeight: '500',
+    color: '#4A5568',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  }}>
+    <div style={{
+      background: 'rgba(255,255,255,0.95)',
+      padding: '2rem 3rem',
+      borderRadius: '20px',
+      boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255,255,255,0.2)'
+    }}>
+      📰 Chargement articles...
+    </div>
+  </div>;
 
   return (
     <div style={{
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       height: '100vh',
-      backgroundColor: '#f8fafc',
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
       display: 'flex',
       flexDirection: 'column'
     }}>
       <header style={{
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'white',
-        padding: '1rem 2rem',
+        padding: '1.5rem 2rem',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255,255,255,0.1)'
       }}>
         <h1 style={{
           margin: 0,
-          fontSize: '2rem',
-          fontWeight: '700',
-          letterSpacing: '0.1em'
+          fontSize: '2.5rem',
+          fontWeight: '800',
+          letterSpacing: '0.1em',
+          textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          background: 'linear-gradient(45deg, #ffffff, #e2e8f0)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent'
         }}>SUPRSS</h1>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
             <button 
               onClick={() => navigate("/admin")}
               style={{
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.2)',
                 color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '15px',
                 cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                fontSize: '14px'
+                transition: 'all 0.3s ease',
+                fontSize: '14px',
+                fontWeight: '600',
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
               }}
-              onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
-              onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+              onMouseOver={(e) => {
+                e.target.style.background = 'rgba(255,255,255,0.25)';
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.background = 'rgba(255,255,255,0.15)';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+              }}
             >
               🛠️ Admin Page
             </button>
@@ -590,17 +647,28 @@ const handleDeleteMessage = async (id) => {
             <button 
               onClick={() => navigate("/settings")}
               style={{
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.2)',
                 color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '15px',
                 cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                fontSize: '14px'
+                transition: 'all 0.3s ease',
+                fontSize: '14px',
+                fontWeight: '600',
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
               }}
-              onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
-              onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+              onMouseOver={(e) => {
+                e.target.style.background = 'rgba(255,255,255,0.25)';
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.background = 'rgba(255,255,255,0.15)';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+              }}
             >
               ⚙️ Paramètres
             </button>
@@ -615,39 +683,54 @@ const handleDeleteMessage = async (id) => {
       }}>
         {/* SIDEBAR */}
         <aside style={{
-          width: '350px',
-          backgroundColor: 'white',
-          borderRight: '1px solid #e2e8f0',
-          padding: '1.5rem',
+          width: '380px',
+          background: 'rgba(255,255,255,0.9)',
+          borderRight: '1px solid rgba(226,232,240,0.6)',
+          padding: '2rem',
           overflowY: 'auto',
-          boxShadow: '2px 0 10px rgba(0,0,0,0.05)'
+          boxShadow: '4px 0 20px rgba(0,0,0,0.08)',
+          backdropFilter: 'blur(10px)'
         }}>
           <h2 style={{
-            color: '#2d3748',
-            fontSize: '1.25rem',
-            fontWeight: '600',
-            marginBottom: '1rem',
-            borderBottom: '2px solid #667eea',
-            paddingBottom: '0.5rem'
+            color: '#2D3748',
+            fontSize: '1.5rem',
+            fontWeight: '700',
+            marginBottom: '1.5rem',
+            borderBottom: '3px solid #667eea',
+            paddingBottom: '0.75rem',
+            background: 'linear-gradient(135deg, #667eea, #764ba2)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
           }}>Collections</h2>
           
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{ marginBottom: '2rem' }}>
             <input
-              placeholder="Nouvelle collection"
+              placeholder="✨ Nouvelle collection"
               value={newCollectionName}
               onChange={(e) => setNewCollectionName(e.target.value)}
               style={{
-                width: '95%',
-                padding: '0.75rem',
-                border: '2px solid #e2e8f0',
-                borderRadius: '8px',
-                fontSize: '14px',
-                marginBottom: '0.5rem',
+                width: '100%',
+                padding: '1rem',
+                border: '2px solid #E2E8F0',
+                borderRadius: '15px',
+                fontSize: '15px',
+                marginBottom: '0.75rem',
                 outline: 'none',
-                transition: 'border-color 0.2s ease'
+                transition: 'all 0.3s ease',
+                background: 'rgba(255,255,255,0.8)',
+                backdropFilter: 'blur(5px)',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.05)'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#667eea'}
-              onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#667eea';
+                e.target.style.boxShadow = '0 4px 20px rgba(102,126,234,0.15)';
+                e.target.style.transform = 'translateY(-1px)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#E2E8F0';
+                e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.05)';
+                e.target.style.transform = 'translateY(0)';
+              }}
             />
             <button 
               onClick={handleCreateCollection}
@@ -656,33 +739,42 @@ const handleDeleteMessage = async (id) => {
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: 'white',
                 border: 'none',
-                padding: '0.75rem',
-                borderRadius: '8px',
+                padding: '1rem',
+                borderRadius: '15px',
                 cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                transition: 'transform 0.2s ease'
+                fontSize: '15px',
+                fontWeight: '600',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(102,126,234,0.3)'
               }}
-              onMouseOver={(e) => e.target.style.transform = 'translateY(-1px)'}
-              onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+              onMouseOver={(e) => {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 8px 25px rgba(102,126,234,0.4)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 15px rgba(102,126,234,0.3)';
+              }}
             >
-              ➕ Créer
+              ➕ Créer Collection
             </button>
           </div>
 
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {(collectionsData?.collections || []).map((col) => (
               <li key={col.id} style={{
-                marginBottom: '0.5rem',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                backgroundColor: col.id === selectedCollection ? '#f7fafc' : 'white',
-                transition: 'all 0.2s ease'
+                marginBottom: '1rem',
+                border: '2px solid rgba(226,232,240,0.6)',
+                borderRadius: '20px',
+                backgroundColor: col.id === selectedCollection ? 'rgba(102,126,234,0.1)' : 'rgba(255,255,255,0.8)',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+                backdropFilter: 'blur(10px)'
               }}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  padding: '0.75rem'
+                  padding: '1rem'
                 }}>
                   <button 
                     onClick={() => setSelectedCollection(col.id)}
@@ -692,30 +784,46 @@ const handleDeleteMessage = async (id) => {
                       border: 'none',
                       textAlign: 'left',
                       cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: col.id === selectedCollection ? '600' : '400',
-                      color: col.id === selectedCollection ? '#667eea' : '#2d3748'
+                      fontSize: '16px',
+                      fontWeight: col.id === selectedCollection ? '700' : '500',
+                      color: col.id === selectedCollection ? '#667eea' : '#2D3748',
+                      transition: 'all 0.2s ease'
                     }}
                   >
-                    {col.name} {col.isShared ? "👥" : ""}
+                    {col.name} {col.isShared ? "👥" : "🔒"}
                   </button>
                   <button 
                     onClick={() => handleDeleteCollection(col.id)}
                     style={{
-                      background: 'none',
-                      border: 'none',
+                      background: 'rgba(239,68,68,0.1)',
+                      border: '1px solid rgba(239,68,68,0.2)',
                       cursor: 'pointer',
-                      padding: '0.25rem',
-                      borderRadius: '4px',
-                      transition: 'background-color 0.2s ease'
+                      padding: '0.5rem',
+                      borderRadius: '10px',
+                      transition: 'all 0.3s ease',
+                      fontSize: '14px'
                     }}
-                    onMouseOver={(e) => e.target.style.backgroundColor = '#fed7d7'}
-                    onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                    onMouseOver={(e) => {
+                      e.target.style.backgroundColor = 'rgba(239,68,68,0.2)';
+                      e.target.style.transform = 'scale(1.1)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.backgroundColor = 'rgba(239,68,68,0.1)';
+                      e.target.style.transform = 'scale(1)';
+                    }}
                   >
                     🗑️
                   </button>
                   {errorMessage && (
-                    <div className="text-red-600 mt-2 text-sm font-medium">
+                    <div style={{
+                      color: '#EF4444',
+                      marginTop: '0.5rem',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      padding: '0.5rem',
+                      backgroundColor: 'rgba(239,68,68,0.1)',
+                      borderRadius: '8px'
+                    }}>
                       {errorMessage}
                     </div>
                   )}
@@ -724,18 +832,21 @@ const handleDeleteMessage = async (id) => {
                 {/* FEEDS */}
                 {col.id === selectedCollection && (
                   <div style={{
-                    borderTop: '1px solid #e2e8f0',
-                    padding: '1rem',
-                    backgroundColor: '#f8fafc'
+                    borderTop: '1px solid rgba(226,232,240,0.6)',
+                    padding: '1.5rem',
+                    background: 'rgba(248,250,252,0.8)',
+                    borderRadius: '0 0 18px 18px'
                   }}>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.5rem 0' }}>
                     <li style={{
-                      padding: '0.5rem',
-                      borderRadius: '6px',
-                      backgroundColor: !selectedFeed ? '#667eea' : 'transparent',
-                      color: !selectedFeed ? 'white' : '#4a5568',
-                      marginBottom: '0.25rem',
-                      border: '1px solid #e2e8f0' // 👈 Contour ajouté
+                      padding: '0.75rem',
+                      borderRadius: '12px',
+                      background: !selectedFeed ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'rgba(255,255,255,0.7)',
+                      color: !selectedFeed ? 'white' : '#4A5568',
+                      marginBottom: '0.5rem',
+                      border: '2px solid rgba(226,232,240,0.4)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      transition: 'all 0.3s ease'
                     }}>
                       <button 
                         onClick={() => setSelectedFeed(null)}
@@ -744,24 +855,25 @@ const handleDeleteMessage = async (id) => {
                           border: 'none',
                           color: 'inherit',
                           cursor: 'pointer',
-                          fontSize: '13px',
-                          fontWeight: '500'
+                          fontSize: '14px',
+                          fontWeight: '600'
                         }}
                       >
-                        Tous les articles
+                        📰 Tous les articles
                       </button>
                     </li>
 
 {col?.feeds?.map((feed) => (
   <li key={feed.id} style={{
-    padding: '0.75rem',
-    borderRadius: '8px',
-    backgroundColor: feed.id === selectedFeed ? '#667eea' : '#f9fafb',
-    color: feed.id === selectedFeed ? 'white' : '#2d3748',
-    marginBottom: '0.5rem',
-    border: '1px solid #e2e8f0',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-    transition: 'background 0.3s ease'
+    padding: '1rem',
+    borderRadius: '15px',
+    background: feed.id === selectedFeed ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'rgba(255,255,255,0.8)',
+    color: feed.id === selectedFeed ? 'white' : '#2D3748',
+    marginBottom: '0.75rem',
+    border: '2px solid rgba(226,232,240,0.4)',
+    boxShadow: '0 6px 15px rgba(0,0,0,0.08)',
+    transition: 'all 0.3s ease',
+    backdropFilter: 'blur(10px)'
   }}>
     {/* Ligne principale : Titre + Tags + Boutons */}
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -774,47 +886,57 @@ const handleDeleteMessage = async (id) => {
           textAlign: 'left',
           color: 'inherit',
           cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: '600'
+          fontSize: '15px',
+          fontWeight: '700'
         }}
       >
-        {feed.title}
-        <div style={{ marginTop: '0.25rem', fontSize: '12px' }}>
+        📡 {feed.title}
+        <div style={{ marginTop: '0.5rem', fontSize: '12px', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
           {Array.isArray(feed.tags) && feed.tags.map(t => (
             <span key={t} style={{
-              marginRight: '0.25rem',
-              background: '#e2e8f0',
-              borderRadius: '4px',
-              padding: '0.1rem 0.4rem',
-              color: '#4a5568'
+              background: 'rgba(102,126,234,0.15)',
+              borderRadius: '8px',
+              padding: '0.2rem 0.6rem',
+              color: '#667eea',
+              fontWeight: '600',
+              border: '1px solid rgba(102,126,234,0.2)'
             }}>#{t}</span>
           ))}
           {Array.isArray(feed.categories) && feed.categories.map(c => (
             <span key={c} style={{
-              marginRight: '0.25rem',
-              background: '#c6f6d5',
-              borderRadius: '4px',
-              padding: '0.1rem 0.4rem',
-              color: '#276749'
+              background: 'rgba(72,187,120,0.15)',
+              borderRadius: '8px',
+              padding: '0.2rem 0.6rem',
+              color: '#48BB78',
+              fontWeight: '600',
+              border: '1px solid rgba(72,187,120,0.2)'
             }}>[{c}]</span>
           ))}
         </div>
       </button>
-      <div style={{ display: 'flex', gap: '0.25rem', marginLeft: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
         <button onClick={() => {
           setEditingFeedId(feed.id);
           setEditTitle(feed.title);
           setEditTags(feed.tags?.join(', ') || '');
           setEditCategories(feed.categories?.join(', ') || '');
+        }} style={{
+          background: 'rgba(72,187,120,0.15)',
+          border: '1px solid rgba(72,187,120,0.2)',
+          borderRadius: '8px',
+          padding: '0.5rem',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease'
         }}>✏️</button>
         <button 
           onClick={() => handleRemoveFeed(feed.id)}
           style={{
-            background: 'none',
-            border: 'none',
+            background: 'rgba(239,68,68,0.15)',
+            border: '1px solid rgba(239,68,68,0.2)',
+            borderRadius: '8px',
+            padding: '0.5rem',
             cursor: 'pointer',
-            borderRadius: '4px',
-            opacity: 0.7
+            transition: 'all 0.2s ease'
           }}
         >
           🗑️
@@ -822,45 +944,75 @@ const handleDeleteMessage = async (id) => {
       </div>
     </div>
 
-    {/* ✅ Formulaire sous le contenu */}
+    {/* Formulaire sous le contenu */}
     {editingFeedId === feed.id && (
-      <div className="edit-form" style={{
-        marginTop: '0.75rem',
-        background: '#edf2f7',
-        padding: '0.75rem',
-        borderRadius: '6px',
-        border: '1px solid #e2e8f0'
+      <div style={{
+        marginTop: '1rem',
+        background: 'rgba(237,242,247,0.8)',
+        padding: '1rem',
+        borderRadius: '12px',
+        border: '2px solid rgba(226,232,240,0.6)',
+        backdropFilter: 'blur(5px)'
       }}>
         <input
           value={editTitle}
           onChange={e => setEditTitle(e.target.value)}
           placeholder="Nouveau titre"
-          style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem', fontSize: '13px', borderRadius: '4px', border: '1px solid #cbd5e0' }}
+          style={{ 
+            width: '100%', 
+            marginBottom: '0.75rem', 
+            padding: '0.75rem', 
+            fontSize: '14px', 
+            borderRadius: '8px', 
+            border: '2px solid #CBD5E0',
+            background: 'rgba(255,255,255,0.9)',
+            transition: 'all 0.2s ease'
+          }}
         />
         <input
           value={editTags}
           onChange={e => setEditTags(e.target.value)}
           placeholder="Tags (séparés par des virgules)"
-          style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem', fontSize: '13px', borderRadius: '4px', border: '1px solid #cbd5e0' }}
+          style={{ 
+            width: '100%', 
+            marginBottom: '0.75rem', 
+            padding: '0.75rem', 
+            fontSize: '14px', 
+            borderRadius: '8px', 
+            border: '2px solid #CBD5E0',
+            background: 'rgba(255,255,255,0.9)',
+            transition: 'all 0.2s ease'
+          }}
         />
         <input
           value={editCategories}
           onChange={e => setEditCategories(e.target.value)}
           placeholder="Catégories (séparées par des virgules)"
-          style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem', fontSize: '13px', borderRadius: '4px', border: '1px solid #cbd5e0' }}
+          style={{ 
+            width: '100%', 
+            marginBottom: '0.75rem', 
+            padding: '0.75rem', 
+            fontSize: '14px', 
+            borderRadius: '8px', 
+            border: '2px solid #CBD5E0',
+            background: 'rgba(255,255,255,0.9)',
+            transition: 'all 0.2s ease'
+          }}
         />
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button
             onClick={() => handleUpdateFeed(feed.id)}
             style={{
-              background: '#38a169',
+              background: 'linear-gradient(135deg, #48BB78 0%, #38A169 100%)',
               color: 'white',
               border: 'none',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '10px',
               cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '500'
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 12px rgba(72,187,120,0.3)'
             }}
           >
             💾 Enregistrer
@@ -868,14 +1020,16 @@ const handleDeleteMessage = async (id) => {
           <button
             onClick={() => setEditingFeedId(null)}
             style={{
-              background: '#e53e3e',
+              background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
               color: 'white',
               border: 'none',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '10px',
               cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '500'
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 12px rgba(239,68,68,0.3)'
             }}
           >
             ❌ Annuler
@@ -890,72 +1044,150 @@ const handleDeleteMessage = async (id) => {
                   </ul>
 
                     
-                    <div style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ marginBottom: '2rem' }}>
                       <input
-                        placeholder="URL RSS"
+                        placeholder="🌐 URL RSS"
                         value={newFeedUrl}
                         onChange={(e) => setNewFeedUrl(e.target.value)}
                         style={{
-                          width: '95%',
-                          padding: '0.5rem',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '6px',
-                          fontSize: '13px',
-                          marginBottom: '0.5rem',
-                          outline: 'none'
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '2px solid #E2E8F0',
+                          borderRadius: '12px',
+                          fontSize: '14px',
+                          marginBottom: '0.75rem',
+                          outline: 'none',
+                          background: 'rgba(255,255,255,0.9)',
+                          transition: 'all 0.3s ease'
                         }}
                       />
-                      <input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="Ajouter tag..." />
-                      <ul>{tagData?.allTags?.filter(t => t.startsWith(tagInput)).map(t => <li onClick={() => addTag(t)}>{t}</li>)}</ul>
-                      <div>{tags.map(t => <span>{t}</span>)}</div>
+                      <input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="🏷️ Ajouter tag..." style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        marginBottom: '0.5rem',
+                        background: 'rgba(255,255,255,0.8)'
+                      }} />
+                      <ul style={{ maxHeight: '100px', overflowY: 'auto', background: 'rgba(255,255,255,0.9)', borderRadius: '8px', padding: '0.5rem' }}>
+                        {tagData?.allTags?.filter(t => t.startsWith(tagInput)).map(t => 
+                          <li key={t} onClick={() => addTag(t)} style={{ 
+                            padding: '0.25rem', 
+                            cursor: 'pointer', 
+                            borderRadius: '4px',
+                            transition: 'background 0.2s ease'
+                          }} onMouseOver={(e) => e.target.style.background = '#F7FAFC'} onMouseOut={(e) => e.target.style.background = 'transparent'}>{t}</li>
+                        )}
+                      </ul>
+                      <div style={{ marginBottom: '0.75rem' }}>
+                        {tags.map(t => <span key={t} style={{
+                          background: 'rgba(102,126,234,0.15)',
+                          color: '#667eea',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '6px',
+                          marginRight: '0.5rem',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>#{t}</span>)}
+                      </div>
 
-                      <input value={categoryInput} onChange={e => setCategoryInput(e.target.value)} placeholder="Ajouter catégorie..." />
-                      <ul>{categoryData?.allCategories?.filter(c => c.startsWith(categoryInput)).map(c => <li onClick={() => addCategory(c)}>{c}</li>)}</ul>
-                      <div>{categories.map(c => <span>{c}</span>)}</div>
+                      <input value={categoryInput} onChange={e => setCategoryInput(e.target.value)} placeholder="📂 Ajouter catégorie..." style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        marginBottom: '0.5rem',
+                        background: 'rgba(255,255,255,0.8)'
+                      }} />
+                      <ul style={{ maxHeight: '100px', overflowY: 'auto', background: 'rgba(255,255,255,0.9)', borderRadius: '8px', padding: '0.5rem' }}>
+                        {categoryData?.allCategories?.filter(c => c.startsWith(categoryInput)).map(c => 
+                          <li key={c} onClick={() => addCategory(c)} style={{ 
+                            padding: '0.25rem', 
+                            cursor: 'pointer', 
+                            borderRadius: '4px',
+                            transition: 'background 0.2s ease'
+                          }} onMouseOver={(e) => e.target.style.background = '#F7FAFC'} onMouseOut={(e) => e.target.style.background = 'transparent'}>{c}</li>
+                        )}
+                      </ul>
+                      <div style={{ marginBottom: '0.75rem' }}>
+                        {categories.map(c => <span key={c} style={{
+                          background: 'rgba(72,187,120,0.15)',
+                          color: '#48BB78',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '6px',
+                          marginRight: '0.5rem',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>[{c}]</span>)}
+                      </div>
                       <button 
                         onClick={handleAddFeed}
                         style={{
                           width: '100%',
-                          background: '#48bb78',
+                          background: 'linear-gradient(135deg, #48BB78 0%, #38A169 100%)',
                           color: 'white',
                           border: 'none',
-                          padding: '0.5rem',
-                          borderRadius: '6px',
+                          padding: '0.75rem',
+                          borderRadius: '12px',
                           cursor: 'pointer',
-                          fontSize: '13px',
-                          fontWeight: '500'
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 4px 12px rgba(72,187,120,0.3)'
                         }}
                       >
-                        Ajouter flux
+                        ➕ Ajouter flux
                       </button>
                     </div>
                     
                     <h4 style={{
-                      color: '#2d3748',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      marginBottom: '0.5rem'
-                    }}>Membres</h4>
-                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
+                      color: '#2D3748',
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      marginBottom: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>👥 Membres</h4>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.5rem 0' }}>
                       {col.members.map((m) => (
                         <li key={m.user.id} style={{
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          padding: '0.5rem',
-                          backgroundColor: '#e2e8f0',
-                          borderRadius: '6px',
-                          marginBottom: '0.25rem',
-                          fontSize: '13px'
+                          padding: '0.75rem',
+                          background: 'rgba(237,242,247,0.8)',
+                          borderRadius: '12px',
+                          marginBottom: '0.5rem',
+                          fontSize: '14px',
+                          border: '1px solid rgba(226,232,240,0.6)',
+                          backdropFilter: 'blur(5px)'
                         }}>
-                          <span>{m.user.name} ({m.role})</span>
+                          <span style={{ fontWeight: '600' }}>
+                            {m.user.name} 
+                            <span style={{ 
+                              marginLeft: '0.5rem',
+                              background: m.role === 'OWNER' ? 'rgba(245,101,101,0.2)' : 'rgba(66,153,225,0.2)',
+                              color: m.role === 'OWNER' ? '#E53E3E' : '#3182CE',
+                              padding: '0.2rem 0.5rem',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: '700'
+                            }}>
+                              {m.role}
+                            </span>
+                          </span>
                           <button 
                             onClick={() => handleRemoveMember(m.user.id)}
                             style={{
-                              background: 'none',
-                              border: 'none',
+                              background: 'rgba(239,68,68,0.15)',
+                              border: '1px solid rgba(239,68,68,0.2)',
+                              borderRadius: '8px',
+                              padding: '0.5rem',
                               cursor: 'pointer',
-                              padding: '0.25rem'
+                              transition: 'all 0.2s ease'
                             }}
                           >
                             ❌
@@ -964,19 +1196,21 @@ const handleDeleteMessage = async (id) => {
                       ))}
                     </ul>
                     
-                    <div style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ marginBottom: '2rem' }}>
                       <input
-                        placeholder="Email membre"
+                        placeholder="📧 Email membre"
                         value={newMemberEmail}
                         onChange={(e) => setNewMemberEmail(e.target.value)}
                         style={{
-                          width: '95%',
-                          padding: '0.5rem',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '6px',
-                          fontSize: '13px',
-                          marginBottom: '0.5rem',
-                          outline: 'none'
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '2px solid #E2E8F0',
+                          borderRadius: '12px',
+                          fontSize: '14px',
+                          marginBottom: '0.75rem',
+                          outline: 'none',
+                          background: 'rgba(255,255,255,0.9)',
+                          transition: 'all 0.3s ease'
                         }}
                       />
                       <select 
@@ -984,143 +1218,176 @@ const handleDeleteMessage = async (id) => {
                         onChange={(e) => setNewMemberRole(e.target.value)}
                         style={{
                           width: '100%',
-                          padding: '0.5rem',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '6px',
-                          fontSize: '13px',
-                          marginBottom: '0.5rem',
-                          outline: 'none'
+                          padding: '0.75rem',
+                          border: '2px solid #E2E8F0',
+                          borderRadius: '12px',
+                          fontSize: '14px',
+                          marginBottom: '0.75rem',
+                          outline: 'none',
+                          background: 'rgba(255,255,255,0.9)',
+                          transition: 'all 0.3s ease'
                         }}
                       >
-                        <option value="OWNER">OWNER</option>
-                        <option value="MEMBER">MEMBER</option>
+                        <option value="OWNER">👑 OWNER</option>
+                        <option value="MEMBER">👤 MEMBER</option>
                       </select>
                       <button 
                         onClick={handleAddMember}
                         style={{
                           width: '100%',
-                          background: '#4299e1',
+                          background: 'linear-gradient(135deg, #4299E1 0%, #3182CE 100%)',
                           color: 'white',
                           border: 'none',
-                          padding: '0.5rem',
-                          borderRadius: '6px',
+                          padding: '0.75rem',
+                          borderRadius: '12px',
                           cursor: 'pointer',
-                          fontSize: '13px',
-                          fontWeight: '500'
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 4px 12px rgba(66,153,225,0.3)'
                         }}
                       >
-                        Inviter membre
+                        ➕ Inviter membre
                       </button>
                     </div>
 
                     <h4 style={{
-                      color: '#2d3748',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      marginBottom: '0.5rem'
-                    }}>Chat</h4>
-                    <ul style={{ 
-                      listStyle: 'none', 
-                      padding: 0, 
-                      margin: '0 0 1rem 0',
-                      maxHeight: '120px',
-                      overflowY: 'auto',
-                      backgroundColor: '#f7fafc',
-                      borderRadius: '6px',
-                      padding: '0.5rem'
-                    }}>
-                      
+                      color: '#2D3748',
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      marginBottom: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>💬 Chat</h4>
+                    
 <ul style={{ 
   listStyle: 'none', 
-  padding: 0, 
-  margin: '0 0 1rem 0',
-  maxHeight: '120px',
+  padding: '1rem', 
+  margin: '0 0 1.5rem 0',
+  maxHeight: '150px',
   overflowY: 'auto',
-  backgroundColor: '#f7fafc',
-  borderRadius: '6px',
-  padding: '0.5rem'
+  background: 'rgba(247,250,252,0.9)',
+  borderRadius: '15px',
+  border: '2px solid rgba(226,232,240,0.4)',
+  backdropFilter: 'blur(10px)'
 }}>
   {col.messages.map((msg) => (
     <li key={msg.id} style={{
-      marginBottom: '0.5rem',
-      fontSize: '13px',
-      lineHeight: '1.4'
+      marginBottom: '0.75rem',
+      fontSize: '14px',
+      lineHeight: '1.5',
+      padding: '0.75rem',
+      background: 'rgba(255,255,255,0.7)',
+      borderRadius: '12px',
+      border: '1px solid rgba(226,232,240,0.3)'
     }}>
-      <b style={{ color: '#667eea' }}>{msg.author.name}:</b>{' '}
+      <b style={{ color: '#667eea', fontWeight: '700' }}>{msg.author.name}:</b>{' '}
       {editingMessageId === msg.id ? (
-        <>
+        <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <input
             value={editingMessageContent}
             onChange={(e) => setEditingMessageContent(e.target.value)}
             style={{
-              width: '70%',
-              padding: '2px',
-              fontSize: '12px',
-              marginLeft: '0.5rem'
+              flex: 1,
+              padding: '0.5rem',
+              fontSize: '13px',
+              borderRadius: '8px',
+              border: '1px solid #E2E8F0',
+              background: 'rgba(255,255,255,0.9)'
             }}
           />
-          <button onClick={() => handleEditMessage(msg.id)} style={{ marginLeft: '0.5rem' }}>✅</button>
-          <button onClick={() => setEditingMessageId(null)}>❌</button>
-        </>
+          <button onClick={() => handleEditMessage(msg.id)} style={{ 
+            background: 'rgba(72,187,120,0.2)', 
+            border: 'none', 
+            borderRadius: '6px', 
+            padding: '0.25rem 0.5rem',
+            cursor: 'pointer'
+          }}>✅</button>
+          <button onClick={() => setEditingMessageId(null)} style={{ 
+            background: 'rgba(239,68,68,0.2)', 
+            border: 'none', 
+            borderRadius: '6px', 
+            padding: '0.25rem 0.5rem',
+            cursor: 'pointer'
+          }}>❌</button>
+        </div>
       ) : (
-        <>
-          <span> {msg.content}</span>
+        <div>
+          <span style={{ color: '#4A5568' }}>{msg.content}</span>
           {meData?.me?.id === msg.author.id && (
-            <>
+            <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.25rem' }}>
               <button
                 onClick={() => {
                   setEditingMessageId(msg.id);
                   setEditingMessageContent(msg.content);
                 }}
-                style={{ marginLeft: '0.5rem', fontSize: '12px' }}
+                style={{ 
+                  background: 'rgba(102,126,234,0.15)', 
+                  border: '1px solid rgba(102,126,234,0.2)',
+                  borderRadius: '6px', 
+                  padding: '0.25rem 0.5rem',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
               >
                 ✏️
               </button>
               <button
                 onClick={() => handleDeleteMessage(msg.id)}
-                style={{ marginLeft: '0.25rem', fontSize: '12px' }}
+                style={{ 
+                  background: 'rgba(239,68,68,0.15)', 
+                  border: '1px solid rgba(239,68,68,0.2)',
+                  borderRadius: '6px', 
+                  padding: '0.25rem 0.5rem',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
               >
                 🗑️
               </button>
-            </>
+            </div>
           )}
-        </>
+        </div>
       )}
     </li>
   ))}
 </ul>
-                    </ul>
                     <textarea
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Votre message"
+                      placeholder="💭 Votre message"
                       style={{
-                        width: '95%',
-                        padding: '0.5rem',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        marginBottom: '0.5rem',
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '2px solid #E2E8F0',
+                        borderRadius: '12px',
+                        fontSize: '14px',
+                        marginBottom: '0.75rem',
                         outline: 'none',
                         resize: 'vertical',
-                        minHeight: '60px'
+                        minHeight: '80px',
+                        background: 'rgba(255,255,255,0.9)',
+                        transition: 'all 0.3s ease'
                       }}
                     />
                     <button 
                       onClick={handleAddMessage}
                       style={{
                         width: '100%',
-                        background: '#38a169',
+                        background: 'linear-gradient(135deg, #38A169 0%, #2F855A 100%)',
                         color: 'white',
                         border: 'none',
-                        padding: '0.5rem',
-                        borderRadius: '6px',
+                        padding: '0.75rem',
+                        borderRadius: '12px',
                         cursor: 'pointer',
-                        fontSize: '13px',
-                        fontWeight: '500'
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 12px rgba(56,161,105,0.3)'
                       }}
                     >
-                      Envoyer
+                      📤 Envoyer
                     </button>
                   </div>
                 )}
@@ -1130,62 +1397,73 @@ const handleDeleteMessage = async (id) => {
 
           <div style={{
             marginTop: '2rem',
-            padding: '1rem',
-            backgroundColor: '#f7fafc',
-            borderRadius: '8px',
-            border: '1px solid #e2e8f0'
+            padding: '1.5rem',
+            background: 'rgba(247,250,252,0.9)',
+            borderRadius: '20px',
+            border: '2px solid rgba(226,232,240,0.4)',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.08)'
           }}>
             <h3 style={{
-              color: '#2d3748',
-              fontSize: '14px',
-              fontWeight: '600',
-              marginBottom: '0.75rem'
-            }}>Export Feeds</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              color: '#2D3748',
+              fontSize: '16px',
+              fontWeight: '700',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>📥 Export Feeds</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <button 
                 onClick={() => handleExport("opml")}
                 style={{
-                  background: '#ed8936',
+                  background: 'linear-gradient(135deg, #ED8936 0%, #DD6B20 100%)',
                   color: 'white',
                   border: 'none',
-                  padding: '0.5rem',
-                  borderRadius: '6px',
+                  padding: '0.75rem',
+                  borderRadius: '12px',
                   cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500'
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 12px rgba(237,137,54,0.3)'
                 }}
               >
-                Export OPML
+                📄 Export OPML
               </button>
               <button 
                 onClick={() => handleExport("json")}
                 style={{
-                  background: '#38a169',
+                  background: 'linear-gradient(135deg, #38A169 0%, #2F855A 100%)',
                   color: 'white',
                   border: 'none',
-                  padding: '0.5rem',
-                  borderRadius: '6px',
+                  padding: '0.75rem',
+                  borderRadius: '12px',
                   cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500'
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 12px rgba(56,161,105,0.3)'
                 }}
               >
-                Export JSON
+                📋 Export JSON
               </button>
               <button 
                 onClick={() => handleExport("csv")}
                 style={{
-                  background: '#3182ce',
+                  background: 'linear-gradient(135deg, #3182CE 0%, #2C5282 100%)',
                   color: 'white',
                   border: 'none',
-                  padding: '0.5rem',
-                  borderRadius: '6px',
+                  padding: '0.75rem',
+                  borderRadius: '12px',
                   cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500'
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 12px rgba(49,130,206,0.3)'
                 }}
               >
-                Export CSV
+                📊 Export CSV
               </button>
             </div>
           </div>
@@ -1195,7 +1473,9 @@ const handleDeleteMessage = async (id) => {
         <section style={{
           flex: 1,
           padding: '2rem',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          background: 'rgba(255,255,255,0.4)',
+          backdropFilter: 'blur(10px)'
         }}>
           <div style={{
             display: 'flex',
@@ -1204,7 +1484,7 @@ const handleDeleteMessage = async (id) => {
             gap: '1rem'
           }}>
           <input
-            placeholder="Recherche..."
+            placeholder="🔍 Recherche..."
             value={searchQuery}
             onChange={(e) => {
               const value = e.target.value;
@@ -1220,15 +1500,26 @@ const handleDeleteMessage = async (id) => {
             }}
             style={{
               flex: 1,
-              padding: '0.75rem 1rem',
-              border: '2px solid #e2e8f0',
-              borderRadius: '25px',
+              padding: '1rem 1.5rem',
+              border: '2px solid rgba(226,232,240,0.6)',
+              borderRadius: '30px',
               fontSize: '16px',
               outline: 'none',
-              transition: 'border-color 0.2s ease'
+              transition: 'all 0.3s ease',
+              background: 'rgba(255,255,255,0.9)',
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
             }}
-            onFocus={(e) => e.target.style.borderColor = '#667eea'}
-            onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#667eea';
+              e.target.style.boxShadow = '0 4px 25px rgba(102,126,234,0.2)';
+              e.target.style.transform = 'translateY(-2px)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = 'rgba(226,232,240,0.6)';
+              e.target.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
+              e.target.style.transform = 'translateY(0)';
+            }}
           />
           <button 
             onClick={() => {
@@ -1242,17 +1533,24 @@ const handleDeleteMessage = async (id) => {
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               color: 'white',
               border: 'none',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '25px',
+              padding: '1rem 2rem',
+              borderRadius: '30px',
               cursor: 'pointer',
               fontSize: '16px',
-              fontWeight: '500',
-              transition: 'transform 0.2s ease'
+              fontWeight: '600',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 20px rgba(102,126,234,0.3)'
             }}
-            onMouseOver={(e) => e.target.style.transform = 'translateY(-1px)'}
-            onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+            onMouseOver={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 8px 30px rgba(102,126,234,0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 20px rgba(102,126,234,0.3)';
+            }}
           >
-            🔎
+            🔎 Rechercher
           </button>
 
           </div>
@@ -1260,14 +1558,20 @@ const handleDeleteMessage = async (id) => {
           {articlesData && articlesData.collection && (
             <>
               <h2 style={{
-                color: '#2d3748',
-                fontSize: '1.5rem',
-                fontWeight: '600',
-                marginBottom: '1.5rem',
-                borderBottom: '2px solid #667eea',
-                paddingBottom: '0.5rem'
+                color: '#2D3748',
+                fontSize: '2rem',
+                fontWeight: '800',
+                marginBottom: '2rem',
+                borderBottom: '4px solid #667eea',
+                paddingBottom: '1rem',
+                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem'
               }}>
-                Articles – {articlesData.collection.name}
+                📰 Articles – {articlesData.collection.name}
               </h2>
 
 {selectedFeed && (() => {
@@ -1276,16 +1580,50 @@ const handleDeleteMessage = async (id) => {
     ?.feeds?.find(f => f.id === selectedFeed);
 
   return feedInfo ? (
-    <div style={{ marginBottom: '1rem' }}>
-      <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Flux : {feedInfo.title}</h3>
-      <div style={{ marginBottom: '0.25rem' }}>
-        Tags : {(feedInfo.tags || []).map((t, i) => (
-          <span key={i} style={{ marginRight: '0.5rem', color: '#667eea' }}>#{t}</span>
+    <div style={{ 
+      marginBottom: '2rem',
+      padding: '1.5rem',
+      background: 'rgba(255,255,255,0.9)',
+      borderRadius: '20px',
+      border: '2px solid rgba(226,232,240,0.4)',
+      boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
+      backdropFilter: 'blur(10px)'
+    }}>
+      <h3 style={{ 
+        fontSize: '1.5rem', 
+        marginBottom: '1rem',
+        color: '#2D3748',
+        fontWeight: '700',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem'
+      }}>📡 Flux : {feedInfo.title}</h3>
+      <div style={{ marginBottom: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <span style={{ fontWeight: '600', color: '#4A5568' }}>🏷️ Tags :</span>
+        {(feedInfo.tags || []).map((t, i) => (
+          <span key={i} style={{ 
+            background: 'rgba(102,126,234,0.15)',
+            color: '#667eea',
+            padding: '0.25rem 0.75rem',
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontWeight: '600',
+            border: '1px solid rgba(102,126,234,0.2)'
+          }}>#{t}</span>
         ))}
       </div>
-      <div>
-        Catégories : {(feedInfo.categories || []).map((c, i) => (
-          <span key={i} style={{ marginRight: '0.5rem', color: '#805ad5' }}>[{c}]</span>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <span style={{ fontWeight: '600', color: '#4A5568' }}>📂 Catégories :</span>
+        {(feedInfo.categories || []).map((c, i) => (
+          <span key={i} style={{ 
+            background: 'rgba(72,187,120,0.15)',
+            color: '#48BB78',
+            padding: '0.25rem 0.75rem',
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontWeight: '600',
+            border: '1px solid rgba(72,187,120,0.2)'
+          }}>[{c}]</span>
         ))}
       </div>
     </div>
@@ -1295,175 +1633,358 @@ const handleDeleteMessage = async (id) => {
               
               <div style={{
                 display: 'grid',
-                gap: '1.5rem'
+                gap: '2rem'
               }}>
                 {articlesData.collection.articles.map((article) => (
                   <div key={article.id} style={{
-                    backgroundColor: 'white',
-                    borderRadius: '12px',
-                    padding: '1.5rem',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                    background: 'rgba(255,255,255,0.95)',
+                    borderRadius: '20px',
+                    padding: '2rem',
+                    border: '2px solid rgba(226,232,240,0.4)',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.08)',
+                    transition: 'all 0.3s ease',
+                    backdropFilter: 'blur(15px)',
+                    position: 'relative',
+                    overflow: 'hidden'
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.1)';
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 15px 40px rgba(0,0,0,0.12)';
+                    e.currentTarget.style.borderColor = 'rgba(102,126,234,0.3)';
                   }}
                   onMouseOut={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(226,232,240,0.4)';
                   }}
                   >
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '4px',
+                      background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)'
+                    }}></div>
 
-                    
                     <div style={{
                       display: 'flex',
-                      gap: '0.75rem',
-                      marginBottom: '1.5rem'
+                      flexDirection: 'column',
+                      gap: '1rem',
+                      marginBottom: '2rem'
                     }}>
-                      <h3 style={{ margin: '0 0 0.25rem 0' }}> 
+                      <h3 style={{ 
+                        margin: '0 0 0.5rem 0',
+                        fontSize: '1.5rem',
+                        fontWeight: '700',
+                        lineHeight: '1.3'
+                      }}> 
                         <a 
                           href={article.link} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          style={{ textDecoration: 'none', color: '#0077cc' }}
+                          style={{ 
+                            textDecoration: 'none', 
+                            color: '#2D3748',
+                            transition: 'color 0.2s ease'
+                          }}
+                          onMouseOver={(e) => e.target.style.color = '#667eea'}
+                          onMouseOut={(e) => e.target.style.color = '#2D3748'}
                         >
                           {article.title}
                         </a>
                       </h3>
 
                       {article.author && (
-                        <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.75rem' }}>
-                          par {article.author}
+                        <div style={{ 
+                          fontSize: '1rem', 
+                          color: '#718096', 
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          ✍️ par <span style={{ color: '#4A5568', fontWeight: '600' }}>{article.author}</span>
                         </div>
                       )}
 
                     {article.content && (
-                      <p style={{ marginTop: '0.5rem' }}>
-                        {article.content.substring(0, 300)}...
-                      </p>
+                      <div style={{ 
+                        marginTop: '1rem',
+                        padding: '1.5rem',
+                        background: 'rgba(248,250,252,0.8)',
+                        borderRadius: '15px',
+                        border: '1px solid rgba(226,232,240,0.3)',
+                        fontSize: '15px',
+                        lineHeight: '1.6',
+                        color: '#4A5568'
+                      }}>
+                        {article.content.substring(0, 400)}...
+                      </div>
                     )}
-                    <div style={{ marginTop: '0.5rem' }}>
-                      {article.isRead ? "✅ Lu" : "📄 Non lu"}
-                      {article.isFavorite && <span style={{ marginLeft: '1rem', color: 'gold' }}>★ Favori</span>}
-                    </div>
-                      
-                      <button 
-                        onClick={() => markRead({ variables: { articleId: article.id, read: !article.isRead } })}
-                        style={{
-                          background: article.isRead ? '#e2e8f0' : '#48bb78',
-                          color: article.isRead ? '#4a5568' : 'white',
-                          border: 'none',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '20px',
-                          cursor: 'pointer',
-                          fontSize: '13px',
-                          fontWeight: '500',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseOver={(e) => e.target.style.transform = 'translateY(-1px)'}
-                        onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
-                      >
-                        {article.isRead ? "Marquer non lu" : "Marquer lu"}
-                      </button>
-                      <button 
-                        onClick={() => markFav({ variables: { articleId: article.id, fav: !article.isFavorite } })}
-                        style={{
-                          background: article.isFavorite ? '#f6e05e' : '#e2e8f0',
-                          color: article.isFavorite ? '#744210' : '#4a5568',
-                          border: 'none',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '20px',
-                          cursor: 'pointer',
-                          fontSize: '13px',
-                          fontWeight: '500',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseOver={(e) => e.target.style.transform = 'translateY(-1px)'}
-                        onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
-                      >
-                        {article.isFavorite ? "★ Retirer favori" : "☆ Favori"}
-                      </button>
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                    <div style={{
+                    
+                    <div style={{ 
+                      marginTop: '1.5rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1rem',
+                      fontSize: '15px',
+                      fontWeight: '600'
+                    }}>
+                      <span style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '1rem',
-                        color: '#718096',
-                        fontSize: '14px'
+                        gap: '0.5rem',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '15px',
+                        background: article.isRead ? 'rgba(72,187,120,0.15)' : 'rgba(245,101,101,0.15)',
+                        color: article.isRead ? '#38A169' : '#E53E3E',
+                        border: `1px solid ${article.isRead ? 'rgba(72,187,120,0.2)' : 'rgba(245,101,101,0.2)'}`
                       }}>
-                        <span style={{
-                          background: '#667eea',
-                          color: 'white',
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          fontWeight: '500'
+                        {article.isRead ? "✅ Lu" : "📄 Non lu"}
+                      </span>
+                      {article.isFavorite && (
+                        <span style={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '15px',
+                          background: 'rgba(245,158,11,0.15)',
+                          color: '#D97706',
+                          border: '1px solid rgba(245,158,11,0.2)'
                         }}>
-                          {article.feed.title}
+                          ⭐ Favori
                         </span>
-                        <span>{new Date(article.published).toLocaleString()}</span>
+                      )}
+                    </div>
+                      
+                      <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                        <button 
+                          onClick={() => markRead({ variables: { articleId: article.id, read: !article.isRead } })}
+                          style={{
+                            background: article.isRead ? 'rgba(107,114,128,0.15)' : 'linear-gradient(135deg, #48BB78 0%, #38A169 100%)',
+                            color: article.isRead ? '#6B7280' : 'white',
+                            border: article.isRead ? '2px solid rgba(107,114,128,0.2)' : 'none',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '15px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            transition: 'all 0.3s ease',
+                            boxShadow: article.isRead ? 'none' : '0 4px 15px rgba(72,187,120,0.3)'
+                          }}
+                          onMouseOver={(e) => {
+                            e.target.style.transform = 'translateY(-2px)';
+                            if (!article.isRead) e.target.style.boxShadow = '0 6px 20px rgba(72,187,120,0.4)';
+                          }}
+                          onMouseOut={(e) => {
+                            e.target.style.transform = 'translateY(0)';
+                            if (!article.isRead) e.target.style.boxShadow = '0 4px 15px rgba(72,187,120,0.3)';
+                          }}
+                        >
+                          {article.isRead ? "📖 Marquer non lu" : "✅ Marquer lu"}
+                        </button>
+                        <button 
+                          onClick={() => markFav({ variables: { articleId: article.id, fav: !article.isFavorite } })}
+                          style={{
+                            background: article.isFavorite ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' : 'rgba(107,114,128,0.15)',
+                            color: article.isFavorite ? 'white' : '#6B7280',
+                            border: article.isFavorite ? 'none' : '2px solid rgba(107,114,128,0.2)',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '15px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            transition: 'all 0.3s ease',
+                            boxShadow: article.isFavorite ? '0 4px 15px rgba(245,158,11,0.3)' : 'none'
+                          }}
+                          onMouseOver={(e) => {
+                            e.target.style.transform = 'translateY(-2px)';
+                            if (article.isFavorite) e.target.style.boxShadow = '0 6px 20px rgba(245,158,11,0.4)';
+                          }}
+                          onMouseOut={(e) => {
+                            e.target.style.transform = 'translateY(0)';
+                            if (article.isFavorite) e.target.style.boxShadow = '0 4px 15px rgba(245,158,11,0.3)';
+                          }}
+                        >
+                          {article.isFavorite ? "⭐ Retirer favori" : "☆ Ajouter favori"}
+                        </button>
                       </div>
                     </div>
+                    
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1.5rem',
+                        color: '#718096',
+                        fontSize: '15px',
+                        fontWeight: '500'
+                      }}>
+                        <span style={{
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '15px',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          boxShadow: '0 2px 8px rgba(102,126,234,0.3)'
+                        }}>
+                          📡 {article.feed.title}
+                        </span>
+                        <span style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '0.5rem',
+                          color: '#6B7280'
+                        }}>
+                          🕒 {new Date(article.published).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                    
                     <div style={{
-                      borderTop: '1px solid #e2e8f0',
-                      paddingTop: '1rem'
+                      borderTop: '2px solid rgba(226,232,240,0.4)',
+                      paddingTop: '2rem',
+                      background: 'rgba(248,250,252,0.5)',
+                      margin: '0 -2rem -2rem -2rem',
+                      padding: '2rem',
+                      borderRadius: '0 0 18px 18px'
                     }}>
-<h4 style={{ color: '#2d3748', fontSize: '16px', fontWeight: '600', marginBottom: '0.75rem' }}>Commentaires</h4>
-<div style={{ marginBottom: '1rem', maxHeight: '150px', overflowY: 'auto' }}>
-  {article.comments.map((c) => (
-    <div key={c.id} style={{ backgroundColor: '#f7fafc', padding: '0.75rem', borderRadius: '8px', marginBottom: '0.5rem', border: '1px solid #e2e8f0' }}>
-      {editingCommentId === c.id ? (
-        <>
-          <input
-            value={editingContent}
-            onChange={(e) => setEditingContent(e.target.value)}
-            style={{ width: '100%', padding: '4px', marginBottom: '6px' }}
-          />
-          <button onClick={() => handleEditComment(c.id)} style={{ marginRight: '0.5rem' }}>✅ Enregistrer</button>
-          <button onClick={() => setEditingCommentId(null)}>❌ Annuler</button>
-        </>
-      ) : (
-        <>
-          <div style={{ fontSize: '13px', lineHeight: '1.4' }}>
-            <span style={{ fontWeight: '600', color: '#667eea', marginRight: '0.5rem' }}>{c.author.name}:</span>
-            <span style={{ color: '#4a5568' }}>{c.content}</span>
-          </div>
-          <div style={{ marginTop: '0.5rem' }}>
-            <button onClick={() => { setEditingCommentId(c.id); setEditingContent(c.content); }} style={{ marginRight: '0.5rem' }}>✏️ Modifier</button>
-            <button onClick={() => handleDeleteComment(c.id)}>🗑️ Supprimer</button>
-          </div>
-        </>
-      )}
-    </div>
-  ))}
-</div>
+                      <h4 style={{ 
+                        color: '#2D3748', 
+                        fontSize: '1.25rem', 
+                        fontWeight: '700', 
+                        marginBottom: '1.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>💬 Commentaires ({article.comments.length})</h4>
+                      
+                      <div style={{ marginBottom: '2rem', maxHeight: '200px', overflowY: 'auto' }}>
+                        {article.comments.map((c) => (
+                          <div key={c.id} style={{ 
+                            background: 'rgba(255,255,255,0.8)', 
+                            padding: '1.5rem', 
+                            borderRadius: '15px', 
+                            marginBottom: '1rem', 
+                            border: '2px solid rgba(226,232,240,0.3)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                            backdropFilter: 'blur(5px)'
+                          }}>
+                            {editingCommentId === c.id ? (
+                              <div>
+                                <textarea
+                                  value={editingContent}
+                                  onChange={(e) => setEditingContent(e.target.value)}
+                                  style={{ 
+                                    width: '100%', 
+                                    padding: '0.75rem', 
+                                    marginBottom: '1rem',
+                                    borderRadius: '10px',
+                                    border: '2px solid #E2E8F0',
+                                    fontSize: '14px',
+                                    minHeight: '80px',
+                                    background: 'rgba(255,255,255,0.9)',
+                                    resize: 'vertical'
+                                  }}
+                                />
+                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                  <button onClick={() => handleEditComment(c.id)} style={{ 
+                                    background: 'linear-gradient(135deg, #48BB78 0%, #38A169 100%)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '10px',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    fontWeight: '600'
+                                  }}>✅ Enregistrer</button>
+                                  <button onClick={() => setEditingCommentId(null)} style={{ 
+                                    background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '10px',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    fontWeight: '600'
+                                  }}>❌ Annuler</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <div style={{ fontSize: '15px', lineHeight: '1.6', marginBottom: '1rem' }}>
+                                  <span style={{ 
+                                    fontWeight: '700', 
+                                    color: '#667eea', 
+                                    marginRight: '0.75rem',
+                                    fontSize: '14px'
+                                  }}>👤 {c.author.name}:</span>
+                                  <span style={{ color: '#4A5568' }}>{c.content}</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                  <button onClick={() => { setEditingCommentId(c.id); setEditingContent(c.content); }} style={{ 
+                                    background: 'rgba(102,126,234,0.15)',
+                                    color: '#667eea',
+                                    border: '1px solid rgba(102,126,234,0.2)',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '10px',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    fontWeight: '600',
+                                    transition: 'all 0.2s ease'
+                                  }}>✏️ Modifier</button>
+                                  <button onClick={() => handleDeleteComment(c.id)} style={{ 
+                                    background: 'rgba(239,68,68,0.15)',
+                                    color: '#EF4444',
+                                    border: '1px solid rgba(239,68,68,0.2)',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '10px',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    fontWeight: '600',
+                                    transition: 'all 0.2s ease'
+                                  }}>🗑️ Supprimer</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
 
                       
                       <div style={{
                         display: 'flex',
-                        gap: '0.75rem',
+                        gap: '1rem',
                         alignItems: 'flex-end'
                       }}>
                         <textarea
-                          placeholder="Ajouter un commentaire"
+                          placeholder="💭 Ajouter un commentaire..."
                           value={newComment}
                           onChange={(e) => setNewComment(e.target.value)}
                           style={{
                             flex: 1,
-                            padding: '0.75rem',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
-                            fontSize: '14px',
+                            padding: '1rem',
+                            border: '2px solid #E2E8F0',
+                            borderRadius: '15px',
+                            fontSize: '15px',
                             outline: 'none',
                             resize: 'vertical',
-                            minHeight: '60px',
-                            transition: 'border-color 0.2s ease'
+                            minHeight: '80px',
+                            transition: 'all 0.3s ease',
+                            background: 'rgba(255,255,255,0.9)',
+                            backdropFilter: 'blur(5px)'
                           }}
-                          onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                          onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = '#667eea';
+                            e.target.style.boxShadow = '0 4px 15px rgba(102,126,234,0.15)';
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = '#E2E8F0';
+                            e.target.style.boxShadow = 'none';
+                          }}
                         />
                         <button 
                           onClick={() => handleAddComment(article.id)}
@@ -1471,18 +1992,25 @@ const handleDeleteMessage = async (id) => {
                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                             color: 'white',
                             border: 'none',
-                            padding: '0.75rem 1.5rem',
-                            borderRadius: '8px',
+                            padding: '1rem 2rem',
+                            borderRadius: '15px',
                             cursor: 'pointer',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            transition: 'transform 0.2s ease',
-                            whiteSpace: 'nowrap'
+                            fontSize: '15px',
+                            fontWeight: '600',
+                            transition: 'all 0.3s ease',
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 4px 15px rgba(102,126,234,0.3)'
                           }}
-                          onMouseOver={(e) => e.target.style.transform = 'translateY(-1px)'}
-                          onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+                          onMouseOver={(e) => {
+                            e.target.style.transform = 'translateY(-2px)';
+                            e.target.style.boxShadow = '0 6px 20px rgba(102,126,234,0.4)';
+                          }}
+                          onMouseOut={(e) => {
+                            e.target.style.transform = 'translateY(0)';
+                            e.target.style.boxShadow = '0 4px 15px rgba(102,126,234,0.3)';
+                          }}
                         >
-                          Commenter
+                          💬 Commenter
                         </button>
                       </div>
                     </div>

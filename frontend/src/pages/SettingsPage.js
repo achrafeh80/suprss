@@ -141,78 +141,295 @@ const handleFontSizeChange = async (size) => {
       padding: '20px'
     }}>
       <div style={{
-        maxWidth: '500px',
+        maxWidth: '600px',
         margin: '40px auto',
-        backgroundColor: 'white',
-        padding: '40px',
-        borderRadius: '16px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-        backdropFilter: 'blur(10px)'
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        padding: '50px',
+        borderRadius: '24px',
+        boxShadow: '0 30px 60px rgba(0,0,0,0.15), 0 10px 30px rgba(0,0,0,0.1)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255, 255, 255, 0.2)'
       }}>
         <h1 style={{
           textAlign: 'center',
-          color: '#333',
-          marginBottom: '30px',
-          fontSize: '28px',
-          fontWeight: '700'
+          color: '#2d3748',
+          marginBottom: '40px',
+          fontSize: '32px',
+          fontWeight: '800',
+          background: 'linear-gradient(135deg, #667eea, #764ba2)',
+          backgroundClip: 'text',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent'
         }}>Paramètres de {data.me.name || data.me.email}</h1>
         
-<div className="settings-page">
-      <h2>Settings</h2>
-      <div>
-        <h3>Appearance</h3>
-        <label>
-          Theme:
-          <select value={theme} onChange={e => handleThemeToggle(e.target.value)}>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-        </label>
-        <label>
-          Font Size:
-          <select value={fontSize} onChange={e => handleFontSizeChange(parseInt(e.target.value))}>
-            <option value="14">Small</option>
-            <option value="16">Medium</option>
-            <option value="20">Large</option>
-          </select>
-        </label>
-      </div>
-      <div>
-        <h3>Account</h3>
-        <form onSubmit={handlePasswordChange}>
-          <div>
-            <label>Current Password: <input type="password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} required /></label>
+        <div style={{
+          backgroundColor: '#f8fafc',
+          borderRadius: '16px',
+          padding: '30px',
+          marginBottom: '30px',
+          border: '1px solid #e2e8f0'
+        }}>
+          <h2 style={{
+            color: '#2d3748',
+            fontSize: '24px',
+            fontWeight: '700',
+            marginBottom: '25px',
+            textAlign: 'center'
+          }}>Settings</h2>
+          
+          <div style={{
+            marginBottom: '30px'
+          }}>
+            <h3 style={{
+              color: '#4a5568',
+              fontSize: '20px',
+              fontWeight: '600',
+              marginBottom: '20px',
+              paddingBottom: '10px',
+              borderBottom: '2px solid #e2e8f0'
+            }}>Appearance</h3>
+            
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px'
+            }}>
+              <label style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                fontSize: '16px',
+                fontWeight: '500',
+                color: '#2d3748'
+              }}>
+                Theme:
+                <select 
+                  value={theme} 
+                  onChange={e => handleThemeToggle(e.target.value)}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    border: '2px solid #e2e8f0',
+                    backgroundColor: 'white',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    color: '#2d3748',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    outline: 'none'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                  onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                >
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </label>
+              
+              <label style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                fontSize: '16px',
+                fontWeight: '500',
+                color: '#2d3748'
+              }}>
+                Font Size:
+                <select 
+                  value={fontSize} 
+                  onChange={e => handleFontSizeChange(parseInt(e.target.value))}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    border: '2px solid #e2e8f0',
+                    backgroundColor: 'white',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    color: '#2d3748',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    outline: 'none'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                  onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                >
+                  <option value="14">Small</option>
+                  <option value="16">Medium</option>
+                  <option value="20">Large</option>
+                </select>
+              </label>
+            </div>
           </div>
+          
           <div>
-            <label>New Password: <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required /></label>
+            <h3 style={{
+              color: '#4a5568',
+              fontSize: '20px',
+              fontWeight: '600',
+              marginBottom: '20px',
+              paddingBottom: '10px',
+              borderBottom: '2px solid #e2e8f0'
+            }}>Account</h3>
+            
+            <form onSubmit={handlePasswordChange} style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+              marginBottom: '25px'
+            }}>
+              <div>
+                <label style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  color: '#2d3748'
+                }}>
+                  Current Password: 
+                  <input 
+                    type="password" 
+                    value={oldPassword} 
+                    onChange={e => setOldPassword(e.target.value)} 
+                    required 
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: '12px',
+                      border: '2px solid #e2e8f0',
+                      backgroundColor: 'white',
+                      fontSize: '16px',
+                      color: '#2d3748',
+                      outline: 'none',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                  />
+                </label>
+              </div>
+              <div>
+                <label style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  color: '#2d3748'
+                }}>
+                  New Password: 
+                  <input 
+                    type="password" 
+                    value={newPassword} 
+                    onChange={e => setNewPassword(e.target.value)} 
+                    required 
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: '12px',
+                      border: '2px solid #e2e8f0',
+                      backgroundColor: 'white',
+                      fontSize: '16px',
+                      color: '#2d3748',
+                      outline: 'none',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                  />
+                </label>
+              </div>
+              <button 
+                type="submit"
+                style={{
+                  padding: '14px 24px',
+                  backgroundColor: '#48bb78',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 12px rgba(72, 187, 120, 0.3)',
+                  transform: 'translateY(0)'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = '#38a169';
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 6px 16px rgba(72, 187, 120, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = '#48bb78';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(72, 187, 120, 0.3)';
+                }}
+              >
+                Change Password
+              </button>
+            </form>
+            
+            <button 
+              onClick={handleDeleteAccount}
+              style={{
+                width: '100%',
+                padding: '14px 24px',
+                backgroundColor: '#f56565',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 12px rgba(245, 101, 101, 0.3)',
+                transform: 'translateY(0)'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.backgroundColor = '#e53e3e';
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 6px 16px rgba(245, 101, 101, 0.4)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.backgroundColor = '#f56565';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 12px rgba(245, 101, 101, 0.3)';
+              }}
+            >
+              Delete Account
+            </button>
           </div>
-          <button type="submit">Change Password</button>
-        </form>
-        <button className="delete-account-btn" onClick={handleDeleteAccount}>Delete Account</button>
-      </div>
-    </div>
+        </div>
         
         <div style={{
           display: 'flex',
-          gap: '12px',
-          marginTop: '24px'
+          gap: '16px',
+          marginTop: '30px'
         }}>
           <button 
             onClick={handleLogout}
             style={{
               flex: 1,
-              padding: '14px',
+              padding: '16px',
               backgroundColor: '#dc3545',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '12px',
               fontSize: '16px',
               fontWeight: '600',
               cursor: 'pointer',
-              transition: 'background-color 0.3s ease'
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 12px rgba(220, 53, 69, 0.3)',
+              transform: 'translateY(0)'
             }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#c82333'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#dc3545'}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = '#c82333';
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 6px 16px rgba(220, 53, 69, 0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = '#dc3545';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 12px rgba(220, 53, 69, 0.3)';
+            }}
           >
             Se déconnecter
           </button>
@@ -221,18 +438,28 @@ const handleFontSizeChange = async (size) => {
             onClick={() => navigate('/')}
             style={{
               flex: 1,
-              padding: '14px',
+              padding: '16px',
               backgroundColor: '#6c757d',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '12px',
               fontSize: '16px',
               fontWeight: '600',
               cursor: 'pointer',
-              transition: 'background-color 0.3s ease'
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 12px rgba(108, 117, 125, 0.3)',
+              transform: 'translateY(0)'
             }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#5a6268'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#6c757d'}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = '#5a6268';
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 6px 16px rgba(108, 117, 125, 0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = '#6c757d';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 12px rgba(108, 117, 125, 0.3)';
+            }}
           >
             ⬅️ Retour
           </button>
