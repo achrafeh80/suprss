@@ -59,7 +59,10 @@ const GET_ARTICLES = gql`
         comments {
           id
           content
-          author { name }
+          author { 
+            id
+            name 
+          }
         }
       }
     }
@@ -266,6 +269,12 @@ function HomePage({ theme, setTheme }) {
   const [editTitle, setEditTitle] = useState('');
   const [editTags, setEditTags] = useState('');
   const [editCategories, setEditCategories] = useState('');
+  const [selectedTag, setSelectedTag] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedSource, setSelectedSource] = useState('');
+  const [onlyUnread, setOnlyUnread] = useState(null); // true, false, null
+  const [onlyFavorites, setOnlyFavorites] = useState(null);
+
 
   // Queries
   const { data: collectionsData, loading: loadingCols, refetch: refetchCols } = useQuery(GET_COLLECTIONS);
@@ -279,6 +288,7 @@ function HomePage({ theme, setTheme }) {
     skip: !selectedCollection
   });
   const { data: meData, loading: loadingMe } = useQuery(ME_QUERY);
+
 
   useEffect(() => {
     if (!loadingMe && !meData?.me) {
@@ -419,7 +429,7 @@ const handleEditComment = async (commentId) => {
 
     setEditingCommentId(null);
     setEditingContent('');
-    refetch(); 
+    refetchArticles(); 
   } catch (err) {
     console.error("Erreur lors de la modification", err);
   }
@@ -432,7 +442,7 @@ const handleDeleteComment = async (commentId) => {
       variables: { id },
     });
 
-    await refetch(); 
+    await refetchArticles(); 
     console.log(`Commentaire ${id} supprimé avec succès.`);
 
   } catch (err) {
@@ -510,6 +520,12 @@ const handleDeleteMessage = async (id) => {
 
   const handleSearch = () => {
     refetchArticles();
+    setArticleFilters({
+      tag: selectedTag || undefined,
+      unread: onlyUnread,
+      favorite: onlyFavorites,
+      feedId: selectedSource || undefined,
+    });
   };
 
     if (loadingMe) return (
@@ -1039,11 +1055,9 @@ const handleDeleteMessage = async (id) => {
     )}
   </li>
 ))}
-
-
                   </ul>
 
-                    
+                
                     <div style={{ marginBottom: '2rem' }}>
                       <input
                         placeholder="🌐 URL RSS"
@@ -1552,6 +1566,49 @@ const handleDeleteMessage = async (id) => {
           >
             🔎 Rechercher
           </button>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', padding: '1rem' }}>
+            <select value={selectedSource} onChange={e => setSelectedSource(e.target.value)}>
+              <option value="">Toutes les sources</option>
+              {(collectionsData?.collections || []).flatMap(col => col.feeds || []).map(feed => (
+                <option key={feed.id} value={feed.id}>{feed.title}</option>
+              ))}
+            </select>
+
+            <select value={selectedTag} onChange={e => setSelectedTag(e.target.value)}>
+              <option value="">Tous les tags</option>
+              {(tagData?.allTags || []).map(tag => (
+                <option key={tag} value={tag}>#{tag}</option>
+              ))}
+            </select>
+
+            <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
+              <option value="">Toutes les catégories</option>
+              {(categoryData?.allCategories || []).map(cat => (
+                <option key={cat} value={cat}>[{cat}]</option>
+              ))}
+            </select>
+
+            <select value={onlyUnread === null ? '' : onlyUnread ? 'unread' : 'read'} onChange={e => {
+              const v = e.target.value;
+              setOnlyUnread(v === '' ? null : v === 'unread');
+            }}>
+              <option value="">Tous les statuts</option>
+              <option value="unread">Non lus</option>
+              <option value="read">Lus</option>
+            </select>
+
+            <select value={onlyFavorites === null ? '' : onlyFavorites ? 'fav' : 'nofav'} onChange={e => {
+              const v = e.target.value;
+              setOnlyFavorites(v === '' ? null : v === 'fav');
+            }}>
+              <option value="">Tous</option>
+              <option value="fav">Favoris</option>
+              <option value="nofav">Non Favoris</option>
+            </select>
+
+            <button onClick={handleSearch}>🔍 Filtrer</button>
+          </div>
+
 
           </div>
 
@@ -1924,6 +1981,7 @@ const handleDeleteMessage = async (id) => {
                                   }}>👤 {c.author.name}:</span>
                                   <span style={{ color: '#4A5568' }}>{c.content}</span>
                                 </div>
+                                {meData?.me?.id === c.author.id && (
                                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                                   <button onClick={() => { setEditingCommentId(c.id); setEditingContent(c.content); }} style={{ 
                                     background: 'rgba(102,126,234,0.15)',
@@ -1946,8 +2004,9 @@ const handleDeleteMessage = async (id) => {
                                     fontSize: '13px',
                                     fontWeight: '600',
                                     transition: 'all 0.2s ease'
-                                  }}>🗑️ Supprimer</button>
-                                </div>
+                                    }}>🗑️ Supprimer</button>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>

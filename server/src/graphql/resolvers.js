@@ -274,17 +274,22 @@ const resolvers = {
       }
       return Object.values(feedsMap);
     },
-    allTags: async () => {
-    const feeds = await Feed.find();
-    const tags = new Set();
-    feeds.forEach(f => (f.tags || []).forEach(t => tags.add(t)));
-    return Array.from(tags);
+    allTags: async (parent, args, { prisma }) => {
+      const feeds = await prisma.feed.findMany({
+        select: { tags: true }
+      });
+      const tags = new Set();
+      feeds.forEach(f => (f.tags || []).forEach(t => tags.add(t)));
+      return Array.from(tags);
     },
-    allCategories: async () => {
-      const feeds = await Feed.find();
-      const cats = new Set();
-      feeds.forEach(f => (f.categories || []).forEach(c => cats.add(c)));
-      return Array.from(cats);
+
+    allCategories: async (parent, args, { prisma }) => {
+      const feeds = await prisma.feed.findMany({
+        select: { categories: true }
+      });
+      const categories = new Set();
+      feeds.forEach(f => (f.categories || []).forEach(c => categories.add(c)));
+      return Array.from(categories);
     },
     searchArticles: async (parent, { query }, { prisma, user }) => {
       if (!user) return [];
