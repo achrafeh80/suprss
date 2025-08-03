@@ -190,6 +190,26 @@ const ADD_MESSAGE = gql`
   }
 `;
 
+const EDIT_MESSAGE = gql`
+  mutation EditMessage($id: Int!, $content: String!) {
+    editMessage(id: $id, content: $content) {
+      id
+      content
+    }
+  }
+`;
+
+const DELETE_MESSAGE = gql`
+  mutation DeleteMessage($id: Int!) {
+    deleteMessage(id: $id) {
+      id
+    }
+  }
+`;
+
+
+
+
 const ADD_MEMBER = gql`
   mutation AddMember($collectionId: ID!, $userEmail: String!, $role: Role) {
     addMember(collectionId: $collectionId, userEmail: $userEmail, role: $role) {
@@ -231,6 +251,8 @@ function HomePage({ theme, setTheme }) {
   const [collections, setCollections] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [errorMessage, setErrorMessage] = useState(null);
+  const [editMessageMutation] = useMutation(EDIT_MESSAGE);
+  const [deleteMessageMutation] = useMutation(DELETE_MESSAGE);  
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingContent, setEditingContent] = useState('');
   const [newMessage, setNewMessage] = useState("");
@@ -269,6 +291,7 @@ function HomePage({ theme, setTheme }) {
   const [createCollection] = useMutation(CREATE_COLLECTION, { onCompleted: () => refetchCols() });
   const [deleteCollection] = useMutation(DELETE_COLLECTION, { onCompleted: () => refetchCols() });
   const [addFeed] = useMutation(ADD_FEED, { onCompleted: () => refetchCols() });
+  const [updateFeed] = useMutation(UPDATE_FEED);
   const [removeFeed] = useMutation(REMOVE_FEED, { onCompleted: () => refetchCols() });
   const [markRead] = useMutation(MARK_READ_MUTATION, { onCompleted: () => refetchArticles() });
   const [markFav] = useMutation(MARK_FAV_MUTATION, { onCompleted: () => refetchArticles() });
@@ -276,6 +299,9 @@ function HomePage({ theme, setTheme }) {
   const [editCommentMutation] = useMutation(EDIT_COMMENT);
   const [deleteCommentMutation] = useMutation(DELETE_COMMENT);
   const [addMessage] = useMutation(ADD_MESSAGE, { onCompleted: () => refetchCols() });
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingMessageContent, setEditingMessageContent] = useState('');
+
   const [addMember] = useMutation(ADD_MEMBER, {
     onCompleted: (data) => {
       alert(`Membre ajouté : ${data.addMember.user.email}`);
@@ -339,13 +365,34 @@ const handleAddFeed = () => {
 };
 
 
-const [updateFeed] = useMutation(UPDATE_FEED, {
-  onCompleted: () => {
+const handleUpdateFeed = (feedId) => {
+  if (!editTitle.trim()) {
+    alert("Le titre ne peut pas être vide.");
+    return;
+  }
+
+  updateFeed({
+    variables: {
+      feedId,
+      title: editTitle,
+      tags: (editTags || '').split(',').map(t => t.trim()).filter(Boolean),
+      categories: (editCategories || '').split(',').map(c => c.trim()).filter(Boolean),
+    }
+  })
+  .then(() => {
+    alert("Flux mis à jour !");
     setEditingFeedId(null);
-    refetchCols(); // ou remets à jour localement
-  },
-  onError: (err) => alert('Erreur : ' + err.message)
-});
+    setEditTitle('');
+    setEditTags('');
+    setEditCategories('');
+    refetchCols();
+  })
+  .catch((error) => {
+    alert("Erreur lors de la mise à jour du flux : " + error.message);
+  });
+};
+
+
 
 
   const handleRemoveFeed = (feedId) => {
@@ -400,6 +447,31 @@ const handleDeleteComment = async (commentId) => {
       setNewMessage("");
     }
   };
+
+  const handleEditMessage = async (id) => {
+  try {
+    await editMessageMutation({
+      variables: { id: parseInt(id, 10), content: editingMessageContent },
+    });
+    setEditingMessageId(null);
+    setEditingMessageContent('');
+    refetchCols();
+  } catch (err) {
+    console.error("Erreur modification message :", err);
+  }
+};
+
+const handleDeleteMessage = async (id) => {
+  try {
+    await deleteMessageMutation({
+      variables: { id: parseInt(id, 10) },
+    });
+    refetchCols();
+  } catch (err) {
+    console.error("Erreur suppression message :", err);
+  }
+};
+
 
   const handleAddMember = () => {
     if (!newMemberEmail.trim()) {
@@ -680,89 +752,141 @@ const handleDeleteComment = async (commentId) => {
                       </button>
                     </li>
 
-                    {col?.feeds?.map((feed) => (
-                      <li key={feed.id} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '0.5rem',
-                        borderRadius: '6px',
-                        backgroundColor: feed.id === selectedFeed ? '#667eea' : 'transparent',
-                        color: feed.id === selectedFeed ? 'white' : '#4a5568',
-                        marginBottom: '0.25rem',
-                        border: '1px solid #e2e8f0' // 👈 Contour ajouté ici aussi
-                      }}>
-                        <button 
-                          onClick={() => setSelectedFeed(feed.id)}
-                          style={{
-                            flex: 1,
-                            background: 'none',
-                            border: 'none',
-                            textAlign: 'left',
-                            color: 'inherit',
-                            cursor: 'pointer',
-                            fontSize: '13px'
-                          }}
-                        >
-                          {feed.title}
-                          <div>
-                            {Array.isArray(feed.tags) && feed.tags.map(t => (
-                              <span className="tag" key={t}>#{t}</span>
-                            ))}
-                            {Array.isArray(feed.categories) && feed.categories.map(c => (
-                              <span className="category" key={c}>[{c}]</span>
-                            ))}
-                          </div>
-                        </button>
-                        <button onClick={() => {
-                            setEditingFeedId(feed.id);
-                            setEditTitle(feed.title);
-                            setEditTags(feed.tags?.join(', ') || '');
-                            setEditCategories(feed.categories?.join(', ') || '');
-                          }}>✏️</button>
-                        <button 
-                          onClick={() => handleRemoveFeed(feed.id)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: '0.25rem',
-                            borderRadius: '4px',
-                            opacity: 0.7
-                          }}
-                        >
-                          🗑️
-                        </button>
-                        {/* edit feed form */}
-                        {editingFeedId === feed.id && (
-                            <div className="edit-form">
-                              <input
-                                value={editTitle}
-                                onChange={e => setEditTitle(e.target.value)}
-                                placeholder="Nouveau titre"
-                              />
-                              <input
-                                value={editTags}
-                                onChange={e => setEditTags(e.target.value)}
-                                placeholder="Tags (séparés par des virgules)"
-                              />
-                              <input
-                                value={editCategories}
-                                onChange={e => setEditCategories(e.target.value)}
-                                placeholder="Catégories (séparées par des virgules)"
-                              />
-                              <button onClick={() => updateFeed({
-                                variables: {
-                                  feedId: feed.id,
-                                  title: editTitle,
-                                  tags: (editTags || '').split(',').map(t => t.trim()).filter(Boolean),
-                                  categories: (editCategories || '').split(',').map(c => c.trim()).filter(Boolean)
-                                }
-                              })}>💾 Enregistrer</button>
-                              <button onClick={() => setEditingFeedId(null)}>❌ Annuler</button>
-                            </div>
-                          )} 
-                      </li>
-                    ))}
+{col?.feeds?.map((feed) => (
+  <li key={feed.id} style={{
+    padding: '0.75rem',
+    borderRadius: '8px',
+    backgroundColor: feed.id === selectedFeed ? '#667eea' : '#f9fafb',
+    color: feed.id === selectedFeed ? 'white' : '#2d3748',
+    marginBottom: '0.5rem',
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+    transition: 'background 0.3s ease'
+  }}>
+    {/* Ligne principale : Titre + Tags + Boutons */}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <button
+        onClick={() => setSelectedFeed(feed.id)}
+        style={{
+          flex: 1,
+          background: 'none',
+          border: 'none',
+          textAlign: 'left',
+          color: 'inherit',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: '600'
+        }}
+      >
+        {feed.title}
+        <div style={{ marginTop: '0.25rem', fontSize: '12px' }}>
+          {Array.isArray(feed.tags) && feed.tags.map(t => (
+            <span key={t} style={{
+              marginRight: '0.25rem',
+              background: '#e2e8f0',
+              borderRadius: '4px',
+              padding: '0.1rem 0.4rem',
+              color: '#4a5568'
+            }}>#{t}</span>
+          ))}
+          {Array.isArray(feed.categories) && feed.categories.map(c => (
+            <span key={c} style={{
+              marginRight: '0.25rem',
+              background: '#c6f6d5',
+              borderRadius: '4px',
+              padding: '0.1rem 0.4rem',
+              color: '#276749'
+            }}>[{c}]</span>
+          ))}
+        </div>
+      </button>
+      <div style={{ display: 'flex', gap: '0.25rem', marginLeft: '0.5rem' }}>
+        <button onClick={() => {
+          setEditingFeedId(feed.id);
+          setEditTitle(feed.title);
+          setEditTags(feed.tags?.join(', ') || '');
+          setEditCategories(feed.categories?.join(', ') || '');
+        }}>✏️</button>
+        <button 
+          onClick={() => handleRemoveFeed(feed.id)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: '4px',
+            opacity: 0.7
+          }}
+        >
+          🗑️
+        </button>
+      </div>
+    </div>
+
+    {/* ✅ Formulaire sous le contenu */}
+    {editingFeedId === feed.id && (
+      <div className="edit-form" style={{
+        marginTop: '0.75rem',
+        background: '#edf2f7',
+        padding: '0.75rem',
+        borderRadius: '6px',
+        border: '1px solid #e2e8f0'
+      }}>
+        <input
+          value={editTitle}
+          onChange={e => setEditTitle(e.target.value)}
+          placeholder="Nouveau titre"
+          style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem', fontSize: '13px', borderRadius: '4px', border: '1px solid #cbd5e0' }}
+        />
+        <input
+          value={editTags}
+          onChange={e => setEditTags(e.target.value)}
+          placeholder="Tags (séparés par des virgules)"
+          style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem', fontSize: '13px', borderRadius: '4px', border: '1px solid #cbd5e0' }}
+        />
+        <input
+          value={editCategories}
+          onChange={e => setEditCategories(e.target.value)}
+          placeholder="Catégories (séparées par des virgules)"
+          style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem', fontSize: '13px', borderRadius: '4px', border: '1px solid #cbd5e0' }}
+        />
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => handleUpdateFeed(feed.id)}
+            style={{
+              background: '#38a169',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500'
+            }}
+          >
+            💾 Enregistrer
+          </button>
+          <button
+            onClick={() => setEditingFeedId(null)}
+            style={{
+              background: '#e53e3e',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500'
+            }}
+          >
+            ❌ Annuler
+          </button>
+        </div>
+      </div>
+    )}
+  </li>
+))}
+
+
                   </ul>
 
                     
@@ -905,15 +1029,66 @@ const handleDeleteComment = async (commentId) => {
                       borderRadius: '6px',
                       padding: '0.5rem'
                     }}>
-                      {col.messages.map((msg) => (
-                        <li key={msg.id} style={{
-                          marginBottom: '0.5rem',
-                          fontSize: '13px',
-                          lineHeight: '1.4'
-                        }}>
-                          <b style={{ color: '#667eea' }}>{msg.author.name}:</b> {msg.content}
-                        </li>
-                      ))}
+                      
+<ul style={{ 
+  listStyle: 'none', 
+  padding: 0, 
+  margin: '0 0 1rem 0',
+  maxHeight: '120px',
+  overflowY: 'auto',
+  backgroundColor: '#f7fafc',
+  borderRadius: '6px',
+  padding: '0.5rem'
+}}>
+  {col.messages.map((msg) => (
+    <li key={msg.id} style={{
+      marginBottom: '0.5rem',
+      fontSize: '13px',
+      lineHeight: '1.4'
+    }}>
+      <b style={{ color: '#667eea' }}>{msg.author.name}:</b>{' '}
+      {editingMessageId === msg.id ? (
+        <>
+          <input
+            value={editingMessageContent}
+            onChange={(e) => setEditingMessageContent(e.target.value)}
+            style={{
+              width: '70%',
+              padding: '2px',
+              fontSize: '12px',
+              marginLeft: '0.5rem'
+            }}
+          />
+          <button onClick={() => handleEditMessage(msg.id)} style={{ marginLeft: '0.5rem' }}>✅</button>
+          <button onClick={() => setEditingMessageId(null)}>❌</button>
+        </>
+      ) : (
+        <>
+          <span> {msg.content}</span>
+          {meData?.me?.id === msg.author.id && (
+            <>
+              <button
+                onClick={() => {
+                  setEditingMessageId(msg.id);
+                  setEditingMessageContent(msg.content);
+                }}
+                style={{ marginLeft: '0.5rem', fontSize: '12px' }}
+              >
+                ✏️
+              </button>
+              <button
+                onClick={() => handleDeleteMessage(msg.id)}
+                style={{ marginLeft: '0.25rem', fontSize: '12px' }}
+              >
+                🗑️
+              </button>
+            </>
+          )}
+        </>
+      )}
+    </li>
+  ))}
+</ul>
                     </ul>
                     <textarea
                       value={newMessage}

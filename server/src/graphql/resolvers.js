@@ -548,28 +548,52 @@ const resolvers = {
       }
       return feed;
     },
-updateFeed: async (parent, { feedId, title, tags, categories }, { prisma,user }) => {
+updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }) => {
   if (!user) throw new Error("Non authentifié");
-  const feed = await Feed.findById(feedId).populate('collection');
+
+  const feed = await prisma.feed.findUnique({
+    where: { id: Number(feedId) },
+    include: {
+      collectionFeeds: {
+        include: {
+          collection: {
+            include: {
+              memberships: true
+            }
+          }
+        }
+      }
+    }
+  });
+
   if (!feed) throw new Error("Flux introuvable");
 
-  const collection = feed.collection;
+  const isAuthorized = feed.collectionFeeds.some(cf => {
+    const collection = cf.collection;
+    const isOwner = collection.ownerId === user.id;
+    const isMemberWithWrite = collection.memberships.some(
+      m => m.userId === user.id && m.role === 'OWNER'
+    );
+    return isOwner || isMemberWithWrite;
+  });
 
-  const isOwner = collection.owner.toString() === user.id;
-  const isMember = collection.members?.some?.(m => m.user.toString() === user.id && m.privileges.includes('WRITE'));
-
-  if (!isOwner && !isMember) {
+  if (!isAuthorized) {
     throw new Error("Accès refusé");
   }
 
-  if (title !== undefined) feed.title = title;
-  if (tags !== undefined) feed.tags = tags;
-  if (categories !== undefined) feed.categories = categories;
+  const updatedFeed = await prisma.feed.update({
+    where: { id: Number(feedId) },
+    data: {
+      ...(title && { title }),
+      ...(tags && { tags }),
+      ...(categories && { categories })
+    }
+  });
 
-  await feed.save();
-  return feed;
+  return updatedFeed;
 }
-    ,
+
+,
     removeFeed: async (parent, { collectionId, feedId }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
       const colId = Number(collectionId);
@@ -717,6 +741,41 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma,user })
       });
       return message;
     },
+    editMessage: async (_, { id, content }, { prisma, user }) => {
+  if (!user) throw new Error("Authentification requise.");
+
+  const message = await prisma.message.findUnique({
+    where: { id: Number(id) },
+    include: { author: true },
+  });
+
+  if (!message || message.authorId !== user.id) {
+    throw new Error("Accès refusé.");
+  }
+
+  return await prisma.message.update({
+    where: { id: Number(id) },
+    data: { content },
+  });
+},
+
+deleteMessage: async (_, { id }, { prisma, user }) => {
+  if (!user) throw new Error("Authentification requise.");
+
+  const message = await prisma.message.findUnique({
+    where: { id: Number(id) },
+    include: { author: true },
+  });
+
+  if (!message || message.authorId !== user.id) {
+    throw new Error("Accès refusé.");
+  }
+
+  return await prisma.message.delete({
+    where: { id: Number(id) },
+  });
+},
+
 
       editComment: async (_, { id, content }, { prisma }) => {
         return await prisma.comment.update({
