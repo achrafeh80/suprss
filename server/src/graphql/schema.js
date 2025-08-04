@@ -131,7 +131,7 @@ const typeDefs = gql`
     addMember(collectionId: ID!, userEmail: String!, role: Role = MEMBER): CollectionMember!
     removeMember(collectionId: ID!, userId: ID!): Boolean!
 
-    importFeeds(opml: String!): Boolean!      # Importer des flux depuis un texte OPML
+    importFeeds(collectionId: Int!, opml: String!): Boolean!     # Importer des flux depuis un texte OPML
     exportFeeds(format: String!): String!     # Exporter les abonnements (format: "opml", "json", "csv")
 
     changePassword(oldPassword: String!, newPassword: String!): Boolean

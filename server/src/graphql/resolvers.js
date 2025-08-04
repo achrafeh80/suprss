@@ -1,6 +1,8 @@
 const { GraphQLScalarType, Kind } = require('graphql');
 const Parser = require('rss-parser');
 const parser = new Parser();
+const RSSParser = require('rss-parser');
+const rssParser = new RSSParser();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { PrismaClientKnownRequestError } = require('@prisma/client/runtime');
@@ -956,40 +958,121 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
       });
       return true;
     },
-    importFeeds: async (parent, { opml }, { prisma, user }) => {
-      if (!user) throw new Error("Authentification requise.");
-      // Parsage basique de l'OPML (XML) pour extraire les URL de flux
-      const feedsAdded = [];
+
+ importFeeds: async (_, { collectionId, opml }, { prisma, user }) => {
+  if (!user) throw new Error("Non authentifié");
+
+  const colId = parseInt(collectionId);
+  if (isNaN(colId)) throw new Error("collectionId invalide");
+
+  const collection = await prisma.collection.findFirst({
+    where: {
+      id: colId,
+      memberships: {
+        some: { userId: user.id }
+      }
+    }
+  });
+  if (!collection) throw new Error("Accès interdit à cette collection.");
+
+  const xml2js = require('xml2js');
+  const parser = new xml2js.Parser();
+  const parsed = await parser.parseStringPromise(opml);
+  const outlines = parsed.opml.body[0].outline || [];
+
+  const RSSParser = require('rss-parser');
+  const rssParser = new RSSParser();
+
+  for (let item of outlines) {
+    const url = item.$.xmlUrl;
+    const title = item.$.title || item.$.text || url;
+    if (!url) continue;
+
+    let feed = await prisma.feed.findUnique({ where: { url } });
+
+    if (!feed) {
       try {
-        const xml2js = require('xml2js');
-        let parsed;
-        await xml2js.parseStringPromise(opml, { explicitArray: false }, (err, result) => {
-          parsed = result;
+        const parsedFeed = await rssParser.parseURL(url);
+        feed = await prisma.feed.create({
+          data: {
+            title: parsedFeed.title || title || url,
+            url,
+            description: parsedFeed.description || "",
+            tags: [],
+            categories: [],
+            status: "active",
+            updateInterval: 60,
+            lastFetched: new Date()
+          }
         });
-        if (!parsed) throw new Error("OPML invalide");
-        const outlines = parsed.opml.body.outline;
-        const feedOutlines = Array.isArray(outlines) ? outlines : [outlines];
-        for (let outline of feedOutlines) {
-          // Si l'outline a des sous-items
-          if (outline.outline) {
-            const innerOutlines = Array.isArray(outline.outline) ? outline.outline : [outline.outline];
-            for (let sub of innerOutlines) {
-              if (sub.$ && sub.$.xmlUrl) {
-                feedsAdded.push(sub.$.xmlUrl);
-                await resolvers.Mutation.addFeed(null, { collectionId: userDefaultCollectionId, url: sub.$.xmlUrl }, { prisma, user });
+
+        for (let item of parsedFeed.items || []) {
+          const guid = item.guid || item.id || item.link;
+          if (!guid) continue;
+          let pubDate = item.isoDate 
+          ? new Date(item.isoDate) 
+          : item.pubDate 
+          ? new Date(item.pubDate) 
+          : new Date();
+
+          try {
+            const article = await prisma.article.create({
+              data: {
+                feedId: feed.id,
+                title: item.title || "(Sans titre)",
+                link: item.link || "",
+                guid,
+                author: item.creator || item.author || "",
+                content: item.contentSnippet || item.content || "",
+                published: pubDate
               }
-            }
-          } else if (outline.$ && outline.$.xmlUrl) {
-            feedsAdded.push(outline.$.xmlUrl);
-            await resolvers.Mutation.addFeed(null, { collectionId: userDefaultCollectionId, url: outline.$.xmlUrl }, { prisma, user });
+            });
+
+            // ✅ LIAISON AVEC L’UTILISATEUR (VISIBLE DANS L’INTERFACE)
+            await prisma.articleStatus.create({
+              data: {
+                userId: user.id,
+                articleId: article.id,
+                isRead: false,
+                isFavorite: false
+              }
+            });
+
+          } catch (err) {
+            // Ignore duplicatas ou autres erreurs
           }
         }
       } catch (err) {
-        console.error("Erreur import OPML:", err.message);
-        throw new Error("Échec de l'importation OPML.");
+        console.error("Erreur parsing RSS:", err.message);
+        continue;
       }
-      return true;
-    },
+    }
+
+    await prisma.collectionFeed.upsert({
+      where: {
+        collectionId_feedId: {
+          collectionId: colId,
+          feedId: feed.id
+        }
+      },
+      update: {},
+      create: {
+        collection: { connect: { id: colId } },
+        feed: { connect: { id: feed.id } }
+      }
+    });
+  }
+  console.log(`✅ Flux importé : ${feed.title} (${feed.url})`);
+  console.log(`➡️ Ajout à la collection : ${colId}`);
+  console.log(`📰 Articles importés : ${parsed.items?.length || 0}`);
+
+
+  return true;
+},
+
+
+
+
     exportFeeds: async (parent, { format }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
       const memberships = await prisma.collectionMembership.findMany({

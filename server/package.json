@@ -27,11 +27,9 @@
     "nodemon": "^2.0.22",
     "prisma": "^4.16.0"
   },
-
   "engines": {
     "node": ">=14"
   },
-  
   "license": "MIT",
   "keywords": [],
   "author": "",

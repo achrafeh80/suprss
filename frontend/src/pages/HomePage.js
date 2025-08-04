@@ -233,6 +233,14 @@ const EXPORT_FEEDS = gql`
     exportFeeds(format: $format)
   }
 `;
+
+const IMPORT_FEEDS = gql`
+  mutation ImportFeeds($collectionId: Int!, $opml: String!) {
+    importFeeds(collectionId: $collectionId, opml: $opml)
+  }
+`;
+
+
 const GET_TAGS = gql`query { allTags }`;
 const GET_CATEGORIES = gql`query { allCategories }`;
 
@@ -254,8 +262,6 @@ function HomePage({ theme, setTheme }) {
   const [collections, setCollections] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [errorMessage, setErrorMessage] = useState(null);
-  const [editMessageMutation] = useMutation(EDIT_MESSAGE);
-  const [deleteMessageMutation] = useMutation(DELETE_MESSAGE);  
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingContent, setEditingContent] = useState('');
   const [newMessage, setNewMessage] = useState("");
@@ -274,6 +280,8 @@ function HomePage({ theme, setTheme }) {
   const [selectedSource, setSelectedSource] = useState('');
   const [onlyUnread, setOnlyUnread] = useState(null); // true, false, null
   const [onlyFavorites, setOnlyFavorites] = useState(null);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingMessageContent, setEditingMessageContent] = useState('');
 
 
   // Queries
@@ -309,8 +317,9 @@ function HomePage({ theme, setTheme }) {
   const [editCommentMutation] = useMutation(EDIT_COMMENT);
   const [deleteCommentMutation] = useMutation(DELETE_COMMENT);
   const [addMessage] = useMutation(ADD_MESSAGE, { onCompleted: () => refetchCols() });
-  const [editingMessageId, setEditingMessageId] = useState(null);
-  const [editingMessageContent, setEditingMessageContent] = useState('');
+  const [editMessageMutation] = useMutation(EDIT_MESSAGE);
+  const [deleteMessageMutation] = useMutation(DELETE_MESSAGE);  
+
 
   const [addMember] = useMutation(ADD_MEMBER, {
     onCompleted: (data) => {
@@ -325,6 +334,12 @@ function HomePage({ theme, setTheme }) {
   });  
   const [removeMember] = useMutation(REMOVE_MEMBER, { onCompleted: () => refetchCols() });
   const [exportFeeds] = useMutation(EXPORT_FEEDS);
+  const [importFeeds] = useMutation(IMPORT_FEEDS, {
+  onCompleted: () => refetchCols(),
+  onError: (err) => alert("Erreur à l'import : " + err.message)
+  });
+  
+
 
   const { data: tagData } = useQuery(GET_TAGS);
   const { data: categoryData } = useQuery(GET_CATEGORIES);
@@ -517,6 +532,30 @@ const handleDeleteMessage = async (id) => {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const handleImportOPML = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const content = e.target.result;
+    try {
+      await importFeeds({
+        variables: {
+          collectionId: parseInt(selectedCollection),
+          opml: content
+        }
+      });
+      alert("Import réussi !");
+    } catch (err) {
+      alert("Erreur : " + err.message);
+    }
+  };
+  refetchCols();
+  reader.readAsText(file);
+};
+
 
   const handleSearch = () => {
     refetchArticles();
@@ -1154,6 +1193,28 @@ const handleDeleteMessage = async (id) => {
                       >
                         ➕ Ajouter flux
                       </button>
+                      <div style={{ marginTop: '1rem' }}>
+                        <label htmlFor="opmlUpload" style={{
+                          display: 'inline-block',
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          color: 'white',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          boxShadow: '0 4px 12px rgba(102,126,234,0.3)'
+                        }}>
+                          📥 Importer OPML
+                          <input
+                            type="file"
+                            id="opmlUpload"
+                            accept=".xml,.opml,.json,.csv"
+                            onChange={handleImportOPML}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
+                      </div>
                     </div>
                     
                     <h4 style={{
