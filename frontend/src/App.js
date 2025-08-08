@@ -61,6 +61,8 @@ function App() {
     }
   }, [theme]);
 
+  
+
   return (
     <ApolloProvider client={client}>
       <Router>

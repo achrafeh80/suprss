@@ -44,7 +44,6 @@ const resolvers = {
       return null;
     },
     feeds: async (parent, args, { prisma, user }) => {
-      // Vérifie que l'utilisateur courant a accès à cette collection
       if (!user) return [];
       const membership = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: user.id, collectionId: parent.id } }
@@ -65,7 +64,10 @@ const resolvers = {
       });
       return memberships.map(m => ({
         user: m.user,
-        role: m.role
+        role: m.role,
+        canRead: m.role === 'OWNER' ? true : !!m.canRead,
+        canAddFeed: m.role === 'OWNER' ? true : !!m.canAddFeed,
+        canComment: m.role === 'OWNER' ? true : !!m.canComment
       }));
     },
     articles: async (parent, args, { prisma, user }) => {
@@ -74,7 +76,7 @@ const resolvers = {
       const membership = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: user.id, collectionId: parent.id } }
       });
-      if (!membership) return [];
+      if (!membership || (membership.role !== 'OWNER' && !membership.canRead)) return [];
       // Récupère les feeds de la collection
       const feedsInCollection = await prisma.collectionFeed.findMany({
         where: { collectionId: parent.id }
@@ -460,8 +462,8 @@ const resolvers = {
         throw new Error("Accès refusé.");
       }
       // Si la collection est partagée, on peut exiger role OWNER pour ajouter un flux
-      if (membership.role !== 'OWNER' && membership.role !== 'MEMBER') {
-        // (pas d'autre rôle ici, donc inutile)
+      if (membership.role !== 'OWNER' && !membership.canAddFeed) {
+        throw new Error("Privilège requis: Ajout de flux.");
       }
       // Vérifie si le flux existe déjà en base (globalement)
       let feed = await prisma.feed.findUnique({ where: { url } });
@@ -712,8 +714,9 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }
       const membership = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: user.id, collectionId: colId } }
       });
-      if (!membership) throw new Error("Accès refusé.");
-      // Vérifie que l'article fait partie des feeds de cette collection
+      if (!membership || (membership.role !== 'OWNER' && !membership.canComment)) {
+        throw new Error("Privilège requis: Commentaire.");
+      }      
       const cf = await prisma.collectionFeed.findFirst({
         where: { collectionId: colId, feed: { articles: { some: { id: artId } } } }
       });
@@ -904,7 +907,7 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
     },
     
 
-    addMember: async (parent, { collectionId, userEmail, role }, { prisma, user }) => {
+    addMember: async (parent, { collectionId, userEmail, role, canAddFeed,canComment,canRead}, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
       const colId = Number(collectionId);
       // Vérifie que user est propriétaire de la collection
@@ -923,11 +926,15 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
       });
       if (existingMember) throw new Error("Cet utilisateur est déjà membre de la collection.");
       // Ajoute le membre
+      const asOwner = role === 'OWNER';
       const newMember = await prisma.collectionMembership.create({
         data: {
           userId: newUser.id,
           collectionId: colId,
-          role: role || 'MEMBER'
+          role: role || 'MEMBER',
+          canRead: asOwner ? true : !!canRead,
+          canAddFeed: asOwner ? true : !!canAddFeed,
+          canComment: asOwner ? true : !!canComment
         },
         include: { user: true }
       });
@@ -935,7 +942,10 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
       await prisma.collection.update({ where: { id: colId }, data: { isShared: true } });
       return {
         user: newMember.user,
-        role: newMember.role
+        role: newMember.role,
+        canAddFeed: true,
+        canComment: true,
+        canRead: true
       };
     },
     removeMember: async (parent, { collectionId, userId }, { prisma, user }) => {
@@ -959,7 +969,34 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
       return true;
     },
 
- importFeeds: async (_, { collectionId, opml }, { prisma, user }) => {
+    updateMember: async (parent, { collectionId, userId, canRead, canAddFeed, canComment }, { prisma, user }) => {
+      if (!user) throw new Error("Authentification requise.");
+      const colId = Number(collectionId);
+      const targetUserId = Number(userId);
+      const me = await prisma.collectionMembership.findUnique({
+        where: { userId_collectionId: { userId: user.id, collectionId: colId } }
+      });
+      if (!me || me.role !== 'OWNER') throw new Error("Seul le propriétaire peut modifier les privilèges.");
+      const target = await prisma.collectionMembership.findUnique({
+        where: { userId_collectionId: { userId: targetUserId, collectionId: colId } }
+      });
+      if (!target) throw new Error("Membre introuvable.");
+      if (target.role === 'OWNER') throw new Error("Impossible de modifier les privilèges du propriétaire.");
+      const updated = await prisma.collectionMembership.update({
+        where: { userId_collectionId: { userId: targetUserId, collectionId: colId } },
+        data: { canRead, canAddFeed, canComment },
+        include: { user: true }
+      });
+      return {
+        user: updated.user,
+        role: updated.role,
+        canRead: !!updated.canRead,
+        canAddFeed: !!updated.canAddFeed,
+        canComment: !!updated.canComment
+      };
+    },
+
+importFeeds: async (_, { collectionId, opml }, { prisma, user }) => {
   if (!user) throw new Error("Non authentifié");
 
   const colId = parseInt(collectionId);
@@ -968,9 +1005,7 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
   const collection = await prisma.collection.findFirst({
     where: {
       id: colId,
-      memberships: {
-        some: { userId: user.id }
-      }
+      memberships: { some: { userId: user.id } }
     }
   });
   if (!collection) throw new Error("Accès interdit à cette collection.");
@@ -978,21 +1013,23 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
   const xml2js = require('xml2js');
   const parser = new xml2js.Parser();
   const parsed = await parser.parseStringPromise(opml);
-  const outlines = parsed.opml.body[0].outline || [];
+  const outlines = parsed.opml.body?.[0]?.outline || [];
 
-  const RSSParser = require('rss-parser');
-  const rssParser = new RSSParser();
+  const rssParser = require('rss-parser');
+  const rss = new rssParser();
 
   for (let item of outlines) {
-    const url = item.$.xmlUrl;
-    const title = item.$.title || item.$.text || url;
+    const url = item.$?.xmlUrl;
+    const title = item.$?.title || item.$?.text || url;
     if (!url) continue;
 
-    let feed = await prisma.feed.findUnique({ where: { url } });
+    let feed; // ✅ Déclarée ici en dehors des blocs conditionnels
+
+    feed = await prisma.feed.findUnique({ where: { url } });
 
     if (!feed) {
       try {
-        const parsedFeed = await rssParser.parseURL(url);
+        const parsedFeed = await rss.parseURL(url);
         feed = await prisma.feed.create({
           data: {
             title: parsedFeed.title || title || url,
@@ -1009,14 +1046,14 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
         for (let item of parsedFeed.items || []) {
           const guid = item.guid || item.id || item.link;
           if (!guid) continue;
-          let pubDate = item.isoDate 
-          ? new Date(item.isoDate) 
-          : item.pubDate 
-          ? new Date(item.pubDate) 
-          : new Date();
+          let pubDate = item.isoDate
+            ? new Date(item.isoDate)
+            : item.pubDate
+            ? new Date(item.pubDate)
+            : new Date();
 
           try {
-            const article = await prisma.article.create({
+            await prisma.article.create({
               data: {
                 feedId: feed.id,
                 title: item.title || "(Sans titre)",
@@ -1027,27 +1064,17 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
                 published: pubDate
               }
             });
-
-            // ✅ LIAISON AVEC L’UTILISATEUR (VISIBLE DANS L’INTERFACE)
-            await prisma.articleStatus.create({
-              data: {
-                userId: user.id,
-                articleId: article.id,
-                isRead: false,
-                isFavorite: false
-              }
-            });
-
           } catch (err) {
-            // Ignore duplicatas ou autres erreurs
+            // duplication possible → ignorée
           }
         }
       } catch (err) {
-        console.error("Erreur parsing RSS:", err.message);
+        console.error("❌ Erreur parsing RSS:", err.message);
         continue;
       }
     }
 
+    // ✅ Correction ici : connect() et pas id direct
     await prisma.collectionFeed.upsert({
       where: {
         collectionId_feedId: {
@@ -1061,17 +1088,12 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
         feed: { connect: { id: feed.id } }
       }
     });
-  }
-  console.log(`✅ Flux importé : ${feed.title} (${feed.url})`);
-  console.log(`➡️ Ajout à la collection : ${colId}`);
-  console.log(`📰 Articles importés : ${parsed.items?.length || 0}`);
 
+    console.log(`✅ Feed ajouté : ${feed.title}`);
+  }
 
   return true;
 },
-
-
-
 
     exportFeeds: async (parent, { format }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");

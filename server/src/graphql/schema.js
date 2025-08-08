@@ -36,20 +36,23 @@ const typeDefs = gql`
     isShared: Boolean!
     owner: User
     feeds: [Feed!]!                # Flux RSS dans cette collection
-    members: [CollectionMember!]!  # Membres de la collection (avec rôles)
+    members: [CollectionMember!]!  # Membres de la collection (avec rôles et privilèges)
     articles(
       feedId: ID,
       unread: Boolean,
       favorite: Boolean,
       tag: String,
       search: String
-    ): [Article!]!                 # Articles des flux de la collection (optionnellement filtrés)
+    ): [Article!]!                 # Articles des flux de la collection (filtrés)
     messages: [Message!]!          # Messages de la collection (chat interne)
   }
 
   type CollectionMember {
     user: User!
     role: Role!
+    canRead: Boolean!
+    canAddFeed: Boolean!
+    canComment: Boolean!
   }
 
   type Feed {
@@ -62,7 +65,7 @@ const typeDefs = gql`
     status: String!
     updateInterval: Int!
     lastFetched: DateTime
-    articles: [Article!]!         # Tous les articles du flux (non filtré par utilisateur)
+    articles: [Article!]!         
   }
 
   type Article {
@@ -96,8 +99,8 @@ const typeDefs = gql`
     me: User
     collections: [Collection!]!             # Collections de l'utilisateur connecté
     collection(id: ID!): Collection
-    feeds: [Feed!]!                         # Tous les flux suivis par l'utilisateur (tous collections confondues)
-    searchArticles(query: String!): [Article!]!   # Recherche plein texte globale dans les titres/contenus
+    feeds: [Feed!]!                         # Tous les feeds suivis par l'utilisateur
+    searchArticles(query: String!): [Article!]!   # Recherche plein texte globale
     allUsers: [User!]!
     allTags: [String!]!
     allCategories: [String!]!
@@ -106,12 +109,12 @@ const typeDefs = gql`
   type Mutation {
     register(email: String!, password: String!, name: String): AuthPayload
     login(email: String!, password: String!): AuthPayload
-    updateSettings(darkMode: String!, fontSize: FontSize): User!
+    updateSettings(darkMode: Boolean, fontSize: FontSize): User!
 
     createCollection(name: String!): Collection!
     deleteCollection(id: ID!): Boolean!
 
-    addFeed(collectionId: ID!, url: String!, title: String,tags: [String!], categories: [String!] ): Feed!
+    addFeed(collectionId: ID!, url: String!, title: String, tags: [String!], categories: [String!]): Feed!
     updateFeed(feedId: ID!, title: String, tags: [String!], categories: [String!]): Feed
     removeFeed(collectionId: ID!, feedId: ID!): Boolean!
 
@@ -127,12 +130,12 @@ const typeDefs = gql`
     editMessage(id: Int!, content: String!): Message!
     deleteMessage(id: Int!): Message!
 
-
-    addMember(collectionId: ID!, userEmail: String!, role: Role = MEMBER): CollectionMember!
+    addMember(collectionId: ID!, userEmail: String!, role: Role = MEMBER, canRead: Boolean = true, canAddFeed: Boolean = false, canComment: Boolean = false): CollectionMember!
     removeMember(collectionId: ID!, userId: ID!): Boolean!
+    updateMember(collectionId: ID!, userId: ID!, canRead: Boolean!, canAddFeed: Boolean!, canComment: Boolean!): CollectionMember!
 
-    importFeeds(collectionId: Int!, opml: String!): Boolean!     # Importer des flux depuis un texte OPML
-    exportFeeds(format: String!): String!     # Exporter les abonnements (format: "opml", "json", "csv")
+    importFeeds(collectionId: Int!, opml: String!): Boolean!
+    exportFeeds(format: String!): String!
 
     changePassword(oldPassword: String!, newPassword: String!): Boolean
     deleteAccount: Boolean
@@ -144,5 +147,4 @@ const typeDefs = gql`
     user: User
   }
 `;
-
 module.exports = { typeDefs };

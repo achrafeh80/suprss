@@ -5,9 +5,15 @@ body {
   color: #333;
 }
 
-/* Thème sombre */
-body.dark-mode {
-  background: #1e1e1e;
+/* Apparence de base */
+.settings-container {
+  background: #fdfdfd;
+  color: #333;
+}
+
+/* Apparence sombre */
+body.dark-mode .settings-container {
+  background: #2a2a2a;
   color: #ddd;
 }
 

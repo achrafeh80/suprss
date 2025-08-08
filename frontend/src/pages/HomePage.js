@@ -1,11 +1,8 @@
-// chemin : ./frontend/src/pages/HomePage.js
 import React, { useEffect, useState } from 'react';
 import { useQuery, gql, useMutation } from '@apollo/client';
 import { useNavigate } from 'react-router-dom';
 
-// ----------------------
-// GraphQL Queries
-// ----------------------
+
 
 const GET_COLLECTIONS = gql`
   query GetCollections {
@@ -17,6 +14,9 @@ const GET_COLLECTIONS = gql`
       members {
         user { id email name }
         role
+        canRead
+        canAddFeed
+        canComment
       }
       messages {
         id
@@ -214,10 +214,25 @@ const DELETE_MESSAGE = gql`
 
 
 const ADD_MEMBER = gql`
-  mutation AddMember($collectionId: ID!, $userEmail: String!, $role: Role) {
-    addMember(collectionId: $collectionId, userEmail: $userEmail, role: $role) {
+  mutation AddMember($collectionId: ID!, $userEmail: String!, $role: Role, $canRead: Boolean, $canAddFeed: Boolean, $canComment: Boolean) {
+    addMember(collectionId: $collectionId, userEmail: $userEmail, role: $role, canRead: $canRead, canAddFeed: $canAddFeed, canComment: $canComment) {
       user { id email name }
       role
+      canRead
+      canAddFeed
+      canComment
+    }
+  }
+`;
+
+const UPDATE_MEMBER = gql`
+  mutation UpdateMember($collectionId: ID!, $userId: ID!, $canRead: Boolean!, $canAddFeed: Boolean!, $canComment: Boolean!) {
+    updateMember(collectionId: $collectionId, userId: $userId, canRead: $canRead, canAddFeed: $canAddFeed, canComment: $canComment) {
+      user { id email name }
+      role
+      canRead
+      canAddFeed
+      canComment
     }
   }
 `;
@@ -267,6 +282,13 @@ function HomePage({ theme, setTheme }) {
   const [newMessage, setNewMessage] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("MEMBER");
+  const [newMemberCanRead, setNewMemberCanRead] = useState(true);
+  const [newMemberCanAdd, setNewMemberCanAdd] = useState(false);
+  const [newMemberCanComment, setNewMemberCanComment] = useState(false);
+  const [editingMemberId, setEditingMemberId] = useState(null);
+  const [editingCanRead, setEditingCanRead] = useState(true);
+  const [editingCanAdd, setEditingCanAdd] = useState(false);
+  const [editingCanComment, setEditingCanComment] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [categoryInput, setCategoryInput] = useState("");
   const [tags, setTags] = useState([]);
@@ -327,12 +349,18 @@ function HomePage({ theme, setTheme }) {
       refetchCols();
       setNewMemberEmail("");
       setNewMemberRole("MEMBER");
+      setNewMemberCanRead(true);
+      setNewMemberCanAdd(false);
+      setNewMemberCanComment(false);
     },
     onError: (err) => {
       alert("Erreur : " + err.message);
     }
   });  
   const [removeMember] = useMutation(REMOVE_MEMBER, { onCompleted: () => refetchCols() });
+  const [updateMember] = useMutation(UPDATE_MEMBER, {
+    onCompleted: () => { setEditingMemberId(null); refetchCols(); }
+  });
   const [exportFeeds] = useMutation(EXPORT_FEEDS);
   const [importFeeds] = useMutation(IMPORT_FEEDS, {
   onCompleted: () => refetchCols(),
@@ -511,7 +539,10 @@ const handleDeleteMessage = async (id) => {
       variables: {
         collectionId: selectedCollection,
         userEmail: newMemberEmail,
-        role: newMemberRole
+        role: newMemberRole,
+        canRead: newMemberCanRead,
+        canAddFeed: newMemberCanAdd,
+        canComment: newMemberCanComment
       }
     });
   };
@@ -1096,7 +1127,19 @@ const handleDeleteMessage = async (id) => {
 ))}
                   </ul>
 
-                
+                  {(() => {
+                      const my = (col.members || []).find(m => m.user.id === meData?.me?.id);
+                      var _priv = {
+                        isOwner: my?.role === 'OWNER',
+                        canRead: (my?.role === 'OWNER') || !!my?.canRead,
+                        canAddFeed: (my?.role === 'OWNER') || !!my?.canAddFeed,
+                        canComment: (my?.role === 'OWNER') || !!my?.canComment
+                      };
+                      window.__COL_PRIV__ = _priv; 
+                      return null;
+                  })()}
+
+                    {((window.__COL_PRIV__ && window.__COL_PRIV__.canAddFeed) ? (
                     <div style={{ marginBottom: '2rem' }}>
                       <input
                         placeholder="🌐 URL RSS"
@@ -1216,6 +1259,7 @@ const handleDeleteMessage = async (id) => {
                         </label>
                       </div>
                     </div>
+                    ) : null)}
                     
                     <h4 style={{
                       color: '#2D3748',
@@ -1253,20 +1297,25 @@ const handleDeleteMessage = async (id) => {
                             }}>
                               {m.role}
                             </span>
+                            <span style={{ marginLeft: '0.5rem' }}>
+                                {m.role === 'OWNER' || m.canRead ? <span title="Lecture" style={{ marginRight: '0.3rem' }}>👁️</span> : null}
+                                {m.role === 'OWNER' || m.canAddFeed ? <span title="Ajout de flux" style={{ marginRight: '0.3rem' }}>➕</span> : null}
+                                {m.role === 'OWNER' || m.canComment ? <span title="Commentaire" style={{ marginRight: '0.3rem' }}>💬</span> : null}
+                              </span>
                           </span>
-                          <button 
-                            onClick={() => handleRemoveMember(m.user.id)}
-                            style={{
-                              background: 'rgba(239,68,68,0.15)',
-                              border: '1px solid rgba(239,68,68,0.2)',
-                              borderRadius: '8px',
-                              padding: '0.5rem',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            ❌
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              {(col.members.find(mm => mm.user.id === meData?.me?.id)?.role === 'OWNER') && m.role !== 'OWNER' && (
+                                <button
+                                  onClick={() => { setEditingMemberId(m.user.id); setEditingCanRead(!!m.canRead); setEditingCanAdd(!!m.canAddFeed); setEditingCanComment(!!m.canComment); }}
+                                  style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer' }}
+                                >🔧</button>
+                              )}
+                              <button 
+                                onClick={() => handleRemoveMember(m.user.id)}
+                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer' }}
+                              >❌</button>
+                             </div>
+              
                         </li>
                       ))}
                     </ul>
@@ -1306,6 +1355,11 @@ const handleDeleteMessage = async (id) => {
                         <option value="OWNER">👑 OWNER</option>
                         <option value="MEMBER">👤 MEMBER</option>
                       </select>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                        <label><input type="checkbox" checked={newMemberCanRead} onChange={(e) => setNewMemberCanRead(e.target.checked)} /> Lecture</label>
+                        <label><input type="checkbox" checked={newMemberCanAdd} onChange={(e) => setNewMemberCanAdd(e.target.checked)} /> Ajout flux</label>
+                        <label><input type="checkbox" checked={newMemberCanComment} onChange={(e) => setNewMemberCanComment(e.target.checked)} /> Commentaire</label>
+                      </div>
                       <button 
                         onClick={handleAddMember}
                         style={{
@@ -1672,6 +1726,12 @@ const handleDeleteMessage = async (id) => {
 
 
           </div>
+
+          {!(window.__COL_PRIV__ && window.__COL_PRIV__.canRead) ? (
+            <div style={{ padding: '1rem', color: '#C05621', background: 'rgba(254,235,200,0.6)', borderRadius: '12px', border: '1px solid #F6AD55' }}>
+              Accès restreint: vous n’avez pas le privilège de lecture pour cette collection.
+            </div>
+          ) : null}
 
           {articlesData && articlesData.collection && (
             <>
@@ -2074,7 +2134,7 @@ const handleDeleteMessage = async (id) => {
                         ))}
                       </div>
 
-                      
+                      {(window.__COL_PRIV__ && window.__COL_PRIV__.canComment) && (
                       <div style={{
                         display: 'flex',
                         gap: '1rem',
@@ -2133,6 +2193,7 @@ const handleDeleteMessage = async (id) => {
                           💬 Commenter
                         </button>
                       </div>
+                      )}
                     </div>
                   </div>
                 ))}

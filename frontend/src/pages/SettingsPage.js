@@ -25,7 +25,7 @@ const GET_ME = gql`
   `;
 
 const UPDATE_SETTINGS = gql`
-  mutation UpdateSettings($darkMode: String, $fontSize: FontSize) {
+  mutation UpdateSettings($darkMode: Boolean, $fontSize: FontSize) {
     updateSettings(darkMode: $darkMode, fontSize: $fontSize) {
       id
       darkMode
@@ -37,6 +37,20 @@ const UPDATE_SETTINGS = gql`
 function SettingsPage({ onLogout }) {
   const navigate = useNavigate();
   const { data, loading } = useQuery(GET_ME);
+  useEffect(() => {
+  if (data?.me) {
+    const userTheme = data.me.darkMode ? 'dark' : 'light';
+    setTheme(userTheme);
+    localStorage.setItem('theme', userTheme);
+
+    const size = data.me.fontSize === 'SMALL' ? 14 :
+                 data.me.fontSize === 'MEDIUM' ? 16 :
+                 data.me.fontSize === 'LARGE' ? 20 : 16;
+    setFontSize(size);
+    localStorage.setItem('fontSize', size.toString());
+  }
+}, [data]);
+
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
@@ -47,13 +61,18 @@ function SettingsPage({ onLogout }) {
   const [updateSettings] = useMutation(UPDATE_SETTINGS);
 
   useEffect(() => {
-    if (data && data.me) {
-      setForm({ darkMode: data.me.darkMode, fontSize: data.me.fontSize });
-      // Appliquer les préférences actuelles de l'utilisateur dans le thème global
-      setTheme(data.me.darkMode ? 'dark' : 'light');
-      setFontSize(parseInt(data.me.fontSize));
+    if (theme === 'dark') {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
     }
-  }, [data, setTheme]);
+
+    // Appliquer la taille de police
+    document.body.classList.remove('font-small', 'font-medium', 'font-large');
+    if (fontSize === 14) document.body.classList.add('font-small');
+    else if (fontSize === 16) document.body.classList.add('font-medium');
+    else if (fontSize === 18 || fontSize === 20) document.body.classList.add('font-large');
+  }, [theme, fontSize]);
 
   if (loading) return <div style={{
     display: 'flex',
@@ -108,8 +127,12 @@ const handleThemeToggle = async (newTheme) => {
   setTheme(newTheme);
   const isDark = newTheme === 'dark';
   localStorage.setItem('theme', newTheme);
-  if (isDark) document.body.classList.add('dark-theme');
-  else document.body.classList.remove('dark-theme');
+  if (isDark) {
+    document.body.classList.add('dark-mode');
+  } else {
+    document.body.classList.remove('dark-mode');
+  }
+
 
   try {
     await updateSettings({ variables: { darkMode: isDark } }); // "true" ou "false" string !
@@ -122,14 +145,27 @@ const handleThemeToggle = async (newTheme) => {
 const handleFontSizeChange = async (size) => {
   setFontSize(size);
   localStorage.setItem('fontSize', size.toString());
-  document.body.style.fontSize = size + 'px';
+  document.body.classList.remove('font-small', 'font-medium', 'font-large');
+  
+  let fontSizeEnum = 'MEDIUM'; 
+  if (size === 14) {
+    document.body.classList.add('font-small');
+    fontSizeEnum = 'SMALL';
+  } else if (size === 16) {
+    document.body.classList.add('font-medium');
+    fontSizeEnum = 'MEDIUM';
+  } else if (size === 18 || size === 20) {
+    document.body.classList.add('font-large');
+    fontSizeEnum = 'LARGE';
+  }
 
   try {
-    await updateSettings({ variables: { fontSize: size } });
+    await updateSettings({ variables: { fontSize: fontSizeEnum } }); 
   } catch (err) {
     console.error('Failed to update font size on server', err);
   }
 };
+
 
 
 

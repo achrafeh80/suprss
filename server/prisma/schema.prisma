@@ -47,14 +47,13 @@ model Collection {
   id          Int       @id @default(autoincrement())
   name        String
   isShared    Boolean   @default(false)
-  owner User? @relation("UserOwnedCollections", fields: [ownerId], references: [id])
+  owner       User?     @relation("UserOwnedCollections", fields: [ownerId], references: [id])
   ownerId     Int?      // proprietaire initial de la collection
   memberships CollectionMembership[]
   collectionFeeds CollectionFeed[]
   comments    Comment[]
   messages    Message[]
   createdAt   DateTime  @default(now())
-
 }
 
 model CollectionMembership {
@@ -64,6 +63,9 @@ model CollectionMembership {
   collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   collectionId Int
   role         Role
+  canRead      Boolean   @default(true)
+  canAddFeed   Boolean   @default(false)
+  canComment   Boolean   @default(false)
   @@unique([userId, collectionId])
 }
 
@@ -72,8 +74,8 @@ model Feed {
   title          String
   url            String   @unique
   description    String?
-  tags           String[] 
-  categories     String[] 
+  tags           String[]
+  categories     String[]
   status         String   @default("active") // statut (ex: active/inactive)
   updateInterval Int      @default(60)       // Fréquence de mise à jour en minutes
   lastFetched    DateTime?
@@ -112,7 +114,6 @@ model ArticleStatus {
   articleId   Int
   isRead      Boolean @default(false)
   isFavorite  Boolean @default(false)
-  // Composite primary key pour (user, article)
   @@id([userId, articleId])
 }
 
