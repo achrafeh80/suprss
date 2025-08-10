@@ -570,10 +570,10 @@ const resolvers = {
       // Mettre isShared = true sur la collection si plus d'un membre (optionnel)
       const memberCount = await prisma.collectionMembership.count({ where: { collectionId: colId } });
       if (memberCount > 1) {
-        await prisma.collection.update({ where: { id: colId }, 
-          data: {       
-            tags: tags || [],
-            categories: categories || [],} });
+        await prisma.collection.update({
+          where: { id: colId },
+          data: { isShared: true },
+        });
       }
       return feed;
     },

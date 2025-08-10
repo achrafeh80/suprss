@@ -105,6 +105,15 @@ const CREATE_COLLECTION = gql`
   }
 `;
 
+const RENAME_COLLECTION = gql`
+  mutation RenameCollection($id: ID!, $name: String!) {
+    renameCollection(id: $id, name: $name) {
+      id
+      name
+    }
+  }
+`;
+
 const DELETE_COLLECTION = gql`
   mutation DeleteCollection($id: ID!) {
     deleteCollection(id: $id)
@@ -273,6 +282,8 @@ function HomePage({ theme, setTheme }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [articleFilters, setArticleFilters] = useState({});
   const [newCollectionName, setNewCollectionName] = useState("");
+  const [renamingCollectionId, setRenamingCollectionId] = useState(null);
+  const [renamingName, setRenamingName] = useState("");
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [collections, setCollections] = useState([]);
   const [newComment, setNewComment] = useState("");
@@ -344,6 +355,15 @@ function HomePage({ theme, setTheme }) {
   const [deleteMessageMutation] = useMutation(DELETE_MESSAGE);  
 
 
+  const [renameCollection, { loading: renaming }] = useMutation(RENAME_COLLECTION, {
+  onCompleted: () => {
+    setRenamingCollectionId(null);
+    setRenamingName("");
+    refetchCols(); 
+  },
+  onError: (err) => alert(err.message)
+  });
+
   const [addMember] = useMutation(ADD_MEMBER, {
     onCompleted: (data) => {
       alert(`Membre ajouté : ${data.addMember.user.email}`);
@@ -414,14 +434,26 @@ const handleDeleteCollection = (id) => {
 
 const handleAddFeed = () => {
   if (newFeedUrl.trim() && selectedCollection) {
-    addFeed({ variables: {
-      collectionId: selectedCollection,
-      url: newFeedUrl,
-      title: newFeedUrl,
-      tags: tagInput,
-      categories: categoryInput,
-    } });
-    setNewFeedUrl("");
+      const tagList = [
+        ...tags,
+        ...((tagInput || '').split(',').map(t => t.trim()).filter(Boolean)),
+      ];
+      const categoryList = [
+        ...categories,
+        ...((categoryInput || '').split(',').map(c => c.trim()).filter(Boolean)),
+      ];
+    addFeed({
+      variables: {
+        collectionId: selectedCollection,
+        url: newFeedUrl,
+        title: newFeedUrl,
+        tags: Array.from(new Set(tagList)),
+        categories: Array.from(new Set(categoryList)),
+      }
+    });
+    setNewFeedUrl('');
+    setTagInput('');
+    setCategoryInput('');
     setTags([]);
     setCategories([]);
   }
@@ -789,7 +821,7 @@ const handleDeleteMessage = async (id) => {
               value={newCollectionName}
               onChange={(e) => setNewCollectionName(e.target.value)}
               style={{
-                width: '95%',
+                width: '90%',
                 padding: '1rem',
                 border: '2px solid #E2E8F0',
                 borderRadius: '15px',
@@ -872,6 +904,24 @@ const handleDeleteMessage = async (id) => {
                   >
                     {col.name} {col.isShared ? "👥" : "🔒"}
                   </button>
+                  {col.members?.some(m => m.user.id === meData?.me?.id && m.role === 'OWNER') && (
+                    <button
+                      onClick={() => { setRenamingCollectionId(col.id); setRenamingName(col.name || ""); }}
+                      style={{
+                        background: 'rgba(72,187,120,0.15)',
+                        border: '1px solid rgba(72,187,120,0.2)',
+                        cursor: 'pointer',
+                        padding: '0.5rem',
+                        borderRadius: '10px',
+                        marginRight: '0.5rem',
+                        transition: 'all 0.3s ease',
+                        fontSize: '14px'
+                      }}
+                      title="Renommer la collection"
+                    >
+                      ✏️
+                    </button>
+                  )}
                   <button 
                     onClick={() => handleDeleteCollection(col.id)}
                     style={{
@@ -894,6 +944,80 @@ const handleDeleteMessage = async (id) => {
                   >
                     🗑️
                   </button>
+                  {renamingCollectionId === col.id && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: 'calc(100% + 8px)',  
+                        right: 0,
+                        width: 280,
+                        background: 'rgba(255,255,255,0.98)',
+                        border: '1px solid rgba(226,232,240,0.6)',
+                        borderRadius: 12,
+                        boxShadow: '0 12px 32px rgba(0,0,0,0.15)',
+                        padding: '0.75rem',
+                        zIndex: 20
+                      }}
+                    >
+                      <input
+                        autoFocus
+                        value={renamingName}
+                        onChange={e => setRenamingName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && renamingName.trim()) {
+                            renameCollection({ variables: { id: col.id, name: renamingName.trim() } });
+                          }
+                          if (e.key === 'Escape') {
+                            setRenamingCollectionId(null);
+                            setRenamingName("");
+                          }
+                        }}
+                        placeholder="Nouveau nom"
+                        style={{
+                          width: '90%',
+                          padding: '0.55rem 0.7rem',
+                          border: '2px solid #CBD5E0',
+                          borderRadius: 10,
+                          fontSize: 14,
+                          outline: 'none',
+                          marginBottom: 8
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button
+                          disabled={renaming || !renamingName.trim()}
+                          onClick={() => renameCollection({ variables: { id: col.id, name: renamingName.trim() } })}
+                          style={{
+                            background: 'linear-gradient(135deg, #48BB78 0%, #38A169 100%)',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '0.5rem 0.8rem',
+                            borderRadius: 8,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: renaming ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          {renaming ? '…' : '💾 Enregistrer'}
+                        </button>
+                        <button
+                          onClick={() => { setRenamingCollectionId(null); setRenamingName(""); }}
+                          style={{
+                            background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '0.5rem 0.8rem',
+                            borderRadius: 8,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          ❌ Annuler
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {errorMessage && (
                     <div style={{
                       color: '#EF4444',
@@ -1133,7 +1257,7 @@ const handleDeleteMessage = async (id) => {
                         }}
                       />
                       <input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="🏷️ Ajouter tag..." style={{
-                        width: '100%',
+                        width: '90%',
                         padding: '0.5rem',
                         border: '1px solid #E2E8F0',
                         borderRadius: '8px',
@@ -1164,7 +1288,7 @@ const handleDeleteMessage = async (id) => {
                       </div>
 
                       <input value={categoryInput} onChange={e => setCategoryInput(e.target.value)} placeholder="📂 Ajouter catégorie..." style={{
-                        width: '100%',
+                        width: '90%',
                         padding: '0.5rem',
                         border: '1px solid #E2E8F0',
                         borderRadius: '8px',
@@ -1342,7 +1466,7 @@ const handleDeleteMessage = async (id) => {
                           {/* ---- PANNEAU D’ÉDITION (sous la row) ---- */}
                           {editingMemberId === m.user.id && (
                             <div style={{ 
-                              width: '92%',                         
+                              width: '90%',                         
                               marginTop: '0.75rem', 
                               padding: '0.75rem', 
                               border: '1px solid #E2E8F0', 
@@ -1374,7 +1498,7 @@ const handleDeleteMessage = async (id) => {
                         value={newMemberEmail}
                         onChange={(e) => setNewMemberEmail(e.target.value)}
                         style={{
-                          width: '92%',
+                          width: '90%',
                           padding: '0.75rem',
                           border: '2px solid #E2E8F0',
                           borderRadius: '12px',
@@ -1535,7 +1659,7 @@ const handleDeleteMessage = async (id) => {
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="💭 Votre message"
                       style={{
-                        width: '92%',
+                        width: '90%',
                         padding: '0.75rem',
                         border: '2px solid #E2E8F0',
                         borderRadius: '12px',
