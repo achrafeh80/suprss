@@ -32,6 +32,30 @@ function App() {
   const [theme, setTheme] = useState({ darkMode: false, fontSize: 'MEDIUM' });
 
   useEffect(() => {
+     const storedTheme = localStorage.getItem('theme');           // "dark" | "light"
+     const storedFont = parseInt(localStorage.getItem('fontSize') || '16', 10); // 14 | 16 | 18/20
+     setTheme({
+       darkMode: storedTheme === 'dark',
+       fontSize: storedFont <= 14 ? 'SMALL' : (storedFont >= 20 ? 'LARGE' : 'MEDIUM'),
+     });
+   }, []);
+ 
+   useEffect(() => {
+     const onStorage = (e) => {
+       if (e.key === 'theme' || e.key === 'fontSize') {
+         const t = localStorage.getItem('theme');
+         const f = parseInt(localStorage.getItem('fontSize') || '16', 10);
+         setTheme({
+           darkMode: t === 'dark',
+           fontSize: f <= 14 ? 'SMALL' : (f >= 20 ? 'LARGE' : 'MEDIUM'),
+         });
+       }
+     };
+     window.addEventListener('storage', onStorage);
+     return () => window.removeEventListener('storage', onStorage);
+   }, []);
+
+  useEffect(() => {
     const hash = window.location.hash;
     if (hash.includes('token=')) {
       const newToken = hash.split('token=')[1];
@@ -59,7 +83,21 @@ function App() {
           : 'font-medium';
       document.body.classList.add(sizeClass);
     }
+    localStorage.setItem('theme', theme.darkMode ? 'dark' : 'light');
+    localStorage.setItem(
+      'fontSize',
+      theme.fontSize === 'SMALL' ? '14' : theme.fontSize === 'LARGE' ? '20' : '16'
+    );
   }, [theme]);
+
+
+  useEffect(() => {
+  if (token) {
+    client.resetStore().catch(() => client.clearStore());
+  } else {
+    client.clearStore();
+  }
+}, [token]);
 
   
 

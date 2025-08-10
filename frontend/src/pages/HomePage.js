@@ -300,10 +300,11 @@ function HomePage({ theme, setTheme }) {
   const [selectedTag, setSelectedTag] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSource, setSelectedSource] = useState('');
-  const [onlyUnread, setOnlyUnread] = useState(null); // true, false, null
+  const [onlyUnread, setOnlyUnread] = useState(null); 
   const [onlyFavorites, setOnlyFavorites] = useState(null);
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingMessageContent, setEditingMessageContent] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
 
   // Queries
@@ -371,6 +372,15 @@ function HomePage({ theme, setTheme }) {
 
   const { data: tagData } = useQuery(GET_TAGS);
   const { data: categoryData } = useQuery(GET_CATEGORIES);
+
+const currentCollection = (collectionsData?.collections || []).find(c => c.id === selectedCollection);
+  const myMembership = currentCollection?.members?.find(m => m.user.id === meData?.me?.id);
+  const myPriv = {
+    isOwner: myMembership?.role === 'OWNER',
+    canRead: (myMembership?.role === 'OWNER') || !!myMembership?.canRead,
+    canAddFeed: (myMembership?.role === 'OWNER') || !!myMembership?.canAddFeed,
+    canComment: (myMembership?.role === 'OWNER') || !!myMembership?.canComment,
+  };
 
   // Handlers
   const handleCreateCollection = () => {
@@ -547,6 +557,37 @@ const handleDeleteMessage = async (id) => {
     });
   };
 
+   const openEditPrivileges = (member) => {
+    setEditingMemberId(member.user.id);
+    setEditingCanRead(member.role === 'OWNER' ? true : !!member.canRead);
+    setEditingCanAdd(member.role === 'OWNER' ? true : !!member.canAddFeed);
+    setEditingCanComment(member.role === 'OWNER' ? true : !!member.canComment);
+  };
+  const handleSaveMemberPrivileges = async () => {
+    if (!editingMemberId || !selectedCollection) return;
+    await updateMember({
+      variables: {
+        collectionId: selectedCollection,
+        userId: editingMemberId,
+        canRead: editingCanRead,
+        canAddFeed: editingCanAdd,
+        canComment: editingCanComment
+      }
+    });
+  };
+  const handleRemoveAllPrivileges = async (userId) => {
+    if (!selectedCollection) return;
+    await updateMember({
+      variables: {
+        collectionId: selectedCollection,
+        userId,
+        canRead: false,
+        canAddFeed: false,
+        canComment: false
+      }
+    });
+  };
+
   const handleRemoveMember = (userId) => {
     removeMember({
       variables: { collectionId: selectedCollection, userId }
@@ -671,23 +712,17 @@ const handleDeleteMessage = async (id) => {
   </div>;
 
   return (
-    <div style={{
+    <div className="app-layout" style={{
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       height: '100vh',
-      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
       display: 'flex',
       flexDirection: 'column'
     }}>
-      <header style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
+      <header className="top-bar" style={{
         padding: '1.5rem 2rem',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255,255,255,0.1)'
+        alignItems: 'center'
       }}>
         <h1 style={{
           margin: 0,
@@ -701,35 +736,6 @@ const handleDeleteMessage = async (id) => {
         }}>SUPRSS</h1>
 
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button 
-              onClick={() => navigate("/admin")}
-              style={{
-                background: 'rgba(255,255,255,0.15)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                color: 'white',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '15px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                fontSize: '14px',
-                fontWeight: '600',
-                backdropFilter: 'blur(10px)',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
-              }}
-              onMouseOver={(e) => {
-                e.target.style.background = 'rgba(255,255,255,0.25)';
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.background = 'rgba(255,255,255,0.15)';
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
-              }}
-            >
-              🛠️ Admin Page
-            </button>
-
             <button 
               onClick={() => navigate("/settings")}
               style={{
@@ -762,21 +768,9 @@ const handleDeleteMessage = async (id) => {
 
       </header>
 
-      <div style={{
-        display: 'flex',
-        flex: 1,
-        overflow: 'hidden'
-      }}>
+      <div className="main-section" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* SIDEBAR */}
-        <aside style={{
-          width: '380px',
-          background: 'rgba(255,255,255,0.9)',
-          borderRight: '1px solid rgba(226,232,240,0.6)',
-          padding: '2rem',
-          overflowY: 'auto',
-          boxShadow: '4px 0 20px rgba(0,0,0,0.08)',
-          backdropFilter: 'blur(10px)'
-        }}>
+        <aside className="sidebar" style={{ width: '380px', padding: '2rem', overflowY: 'auto' }}>
           <h2 style={{
             color: '#2D3748',
             fontSize: '1.5rem',
@@ -795,7 +789,7 @@ const handleDeleteMessage = async (id) => {
               value={newCollectionName}
               onChange={(e) => setNewCollectionName(e.target.value)}
               style={{
-                width: '100%',
+                width: '95%',
                 padding: '1rem',
                 border: '2px solid #E2E8F0',
                 borderRadius: '15px',
@@ -949,204 +943,185 @@ const handleDeleteMessage = async (id) => {
                       </button>
                     </li>
 
-{col?.feeds?.map((feed) => (
-  <li key={feed.id} style={{
-    padding: '1rem',
-    borderRadius: '15px',
-    background: feed.id === selectedFeed ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'rgba(255,255,255,0.8)',
-    color: feed.id === selectedFeed ? 'white' : '#2D3748',
-    marginBottom: '0.75rem',
-    border: '2px solid rgba(226,232,240,0.4)',
-    boxShadow: '0 6px 15px rgba(0,0,0,0.08)',
-    transition: 'all 0.3s ease',
-    backdropFilter: 'blur(10px)'
-  }}>
-    {/* Ligne principale : Titre + Tags + Boutons */}
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <button
-        onClick={() => setSelectedFeed(feed.id)}
-        style={{
-          flex: 1,
-          background: 'none',
-          border: 'none',
-          textAlign: 'left',
-          color: 'inherit',
-          cursor: 'pointer',
-          fontSize: '15px',
-          fontWeight: '700'
-        }}
-      >
-        📡 {feed.title}
-        <div style={{ marginTop: '0.5rem', fontSize: '12px', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-          {Array.isArray(feed.tags) && feed.tags.map(t => (
-            <span key={t} style={{
-              background: 'rgba(102,126,234,0.15)',
-              borderRadius: '8px',
-              padding: '0.2rem 0.6rem',
-              color: '#667eea',
-              fontWeight: '600',
-              border: '1px solid rgba(102,126,234,0.2)'
-            }}>#{t}</span>
-          ))}
-          {Array.isArray(feed.categories) && feed.categories.map(c => (
-            <span key={c} style={{
-              background: 'rgba(72,187,120,0.15)',
-              borderRadius: '8px',
-              padding: '0.2rem 0.6rem',
-              color: '#48BB78',
-              fontWeight: '600',
-              border: '1px solid rgba(72,187,120,0.2)'
-            }}>[{c}]</span>
-          ))}
-        </div>
-      </button>
-      <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
-        <button onClick={() => {
-          setEditingFeedId(feed.id);
-          setEditTitle(feed.title);
-          setEditTags(feed.tags?.join(', ') || '');
-          setEditCategories(feed.categories?.join(', ') || '');
-        }} style={{
-          background: 'rgba(72,187,120,0.15)',
-          border: '1px solid rgba(72,187,120,0.2)',
-          borderRadius: '8px',
-          padding: '0.5rem',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease'
-        }}>✏️</button>
-        <button 
-          onClick={() => handleRemoveFeed(feed.id)}
-          style={{
-            background: 'rgba(239,68,68,0.15)',
-            border: '1px solid rgba(239,68,68,0.2)',
-            borderRadius: '8px',
-            padding: '0.5rem',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          🗑️
-        </button>
-      </div>
-    </div>
+                    {col?.feeds?.map((feed) => (
+                      <li key={feed.id} style={{
+                        padding: '1rem',
+                        borderRadius: '15px',
+                        background: feed.id === selectedFeed ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'rgba(255,255,255,0.8)',
+                        color: feed.id === selectedFeed ? 'white' : '#2D3748',
+                        marginBottom: '0.75rem',
+                        border: '2px solid rgba(226,232,240,0.4)',
+                        boxShadow: '0 6px 15px rgba(0,0,0,0.08)',
+                        transition: 'all 0.3s ease',
+                        backdropFilter: 'blur(10px)'
+                      }}>
+                        {/* Ligne principale : Titre + Tags + Boutons */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <button
+                            onClick={() => setSelectedFeed(feed.id)}
+                            style={{
+                              flex: 1,
+                              background: 'none',
+                              border: 'none',
+                              textAlign: 'left',
+                              color: 'inherit',
+                              cursor: 'pointer',
+                              fontSize: '15px',
+                              fontWeight: '700'
+                            }}
+                          >
+                            📡 {feed.title}
+                            <div style={{ marginTop: '0.5rem', fontSize: '12px', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                              {Array.isArray(feed.tags) && feed.tags.map(t => (
+                                <span key={t} style={{
+                                  background: 'rgba(102,126,234,0.15)',
+                                  borderRadius: '8px',
+                                  padding: '0.2rem 0.6rem',
+                                  color: '#667eea',
+                                  fontWeight: '600',
+                                  border: '1px solid rgba(102,126,234,0.2)'
+                                }}>#{t}</span>
+                              ))}
+                              {Array.isArray(feed.categories) && feed.categories.map(c => (
+                                <span key={c} style={{
+                                  background: 'rgba(72,187,120,0.15)',
+                                  borderRadius: '8px',
+                                  padding: '0.2rem 0.6rem',
+                                  color: '#48BB78',
+                                  fontWeight: '600',
+                                  border: '1px solid rgba(72,187,120,0.2)'
+                                }}>[{c}]</span>
+                              ))}
+                            </div>
+                          </button>
+                          <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                            <button onClick={() => {
+                              setEditingFeedId(feed.id);
+                              setEditTitle(feed.title);
+                              setEditTags(feed.tags?.join(', ') || '');
+                              setEditCategories(feed.categories?.join(', ') || '');
+                            }} style={{
+                              background: 'rgba(72,187,120,0.15)',
+                              border: '1px solid rgba(72,187,120,0.2)',
+                              borderRadius: '8px',
+                              padding: '0.5rem',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease'
+                            }}>✏️</button>
+                            <button 
+                              onClick={() => handleRemoveFeed(feed.id)}
+                              style={{
+                                background: 'rgba(239,68,68,0.15)',
+                                border: '1px solid rgba(239,68,68,0.2)',
+                                borderRadius: '8px',
+                                padding: '0.5rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                              }}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
 
-    {/* Formulaire sous le contenu */}
-    {editingFeedId === feed.id && (
-      <div style={{
-        marginTop: '1rem',
-        background: 'rgba(237,242,247,0.8)',
-        padding: '1rem',
-        borderRadius: '12px',
-        border: '2px solid rgba(226,232,240,0.6)',
-        backdropFilter: 'blur(5px)'
-      }}>
-        <input
-          value={editTitle}
-          onChange={e => setEditTitle(e.target.value)}
-          placeholder="Nouveau titre"
-          style={{ 
-            width: '100%', 
-            marginBottom: '0.75rem', 
-            padding: '0.75rem', 
-            fontSize: '14px', 
-            borderRadius: '8px', 
-            border: '2px solid #CBD5E0',
-            background: 'rgba(255,255,255,0.9)',
-            transition: 'all 0.2s ease'
-          }}
-        />
-        <input
-          value={editTags}
-          onChange={e => setEditTags(e.target.value)}
-          placeholder="Tags (séparés par des virgules)"
-          style={{ 
-            width: '100%', 
-            marginBottom: '0.75rem', 
-            padding: '0.75rem', 
-            fontSize: '14px', 
-            borderRadius: '8px', 
-            border: '2px solid #CBD5E0',
-            background: 'rgba(255,255,255,0.9)',
-            transition: 'all 0.2s ease'
-          }}
-        />
-        <input
-          value={editCategories}
-          onChange={e => setEditCategories(e.target.value)}
-          placeholder="Catégories (séparées par des virgules)"
-          style={{ 
-            width: '100%', 
-            marginBottom: '0.75rem', 
-            padding: '0.75rem', 
-            fontSize: '14px', 
-            borderRadius: '8px', 
-            border: '2px solid #CBD5E0',
-            background: 'rgba(255,255,255,0.9)',
-            transition: 'all 0.2s ease'
-          }}
-        />
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button
-            onClick={() => handleUpdateFeed(feed.id)}
-            style={{
-              background: 'linear-gradient(135deg, #48BB78 0%, #38A169 100%)',
-              color: 'white',
-              border: 'none',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '10px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 4px 12px rgba(72,187,120,0.3)'
-            }}
-          >
-            💾 Enregistrer
-          </button>
-          <button
-            onClick={() => setEditingFeedId(null)}
-            style={{
-              background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-              color: 'white',
-              border: 'none',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '10px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 4px 12px rgba(239,68,68,0.3)'
-            }}
-          >
-            ❌ Annuler
-          </button>
-        </div>
-      </div>
-    )}
-  </li>
-))}
+                        {/* Formulaire sous le contenu */}
+                        {editingFeedId === feed.id && (
+                          <div style={{ borderTop: '1px solid rgba(226,232,240,0.6)', padding: '1.5rem', borderRadius: '0 0 18px 18px' }}>
+                            <input
+                              value={editTitle}
+                              onChange={e => setEditTitle(e.target.value)}
+                              placeholder="Nouveau titre"
+                              style={{ 
+                                width: '100%', 
+                                marginBottom: '0.75rem', 
+                                padding: '0.75rem', 
+                                fontSize: '14px', 
+                                borderRadius: '8px', 
+                                border: '2px solid #CBD5E0',
+                                background: 'rgba(255,255,255,0.9)',
+                                transition: 'all 0.2s ease'
+                              }}
+                            />
+                            <input
+                              value={editTags}
+                              onChange={e => setEditTags(e.target.value)}
+                              placeholder="Tags (séparés par des virgules)"
+                              style={{ 
+                                width: '100%', 
+                                marginBottom: '0.75rem', 
+                                padding: '0.75rem', 
+                                fontSize: '14px', 
+                                borderRadius: '8px', 
+                                border: '2px solid #CBD5E0',
+                                background: 'rgba(255,255,255,0.9)',
+                                transition: 'all 0.2s ease'
+                              }}
+                            />
+                            <input
+                              value={editCategories}
+                              onChange={e => setEditCategories(e.target.value)}
+                              placeholder="Catégories (séparées par des virgules)"
+                              style={{ 
+                                width: '100%', 
+                                marginBottom: '0.75rem', 
+                                padding: '0.75rem', 
+                                fontSize: '14px', 
+                                borderRadius: '8px', 
+                                border: '2px solid #CBD5E0',
+                                background: 'rgba(255,255,255,0.9)',
+                                transition: 'all 0.2s ease'
+                              }}
+                            />
+                            <div style={{ display: 'flex', gap: '0.75rem' }}>
+                              <button
+                                onClick={() => handleUpdateFeed(feed.id)}
+                                style={{
+                                  background: 'linear-gradient(135deg, #48BB78 0%, #38A169 100%)',
+                                  color: 'white',
+                                  border: 'none',
+                                  padding: '0.75rem 1.5rem',
+                                  borderRadius: '10px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  fontWeight: '600',
+                                  transition: 'all 0.3s ease',
+                                  boxShadow: '0 4px 12px rgba(72,187,120,0.3)'
+                                }}
+                              >
+                                💾 Enregistrer
+                              </button>
+                              <button
+                                onClick={() => setEditingFeedId(null)}
+                                style={{
+                                  background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                                  color: 'white',
+                                  border: 'none',
+                                  padding: '0.75rem 1.5rem',
+                                  borderRadius: '10px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  fontWeight: '600',
+                                  transition: 'all 0.3s ease',
+                                  boxShadow: '0 4px 12px rgba(239,68,68,0.3)'
+                                }}
+                              >
+                                ❌ Annuler
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </li>
+                    ))}
                   </ul>
 
-                  {(() => {
-                      const my = (col.members || []).find(m => m.user.id === meData?.me?.id);
-                      var _priv = {
-                        isOwner: my?.role === 'OWNER',
-                        canRead: (my?.role === 'OWNER') || !!my?.canRead,
-                        canAddFeed: (my?.role === 'OWNER') || !!my?.canAddFeed,
-                        canComment: (my?.role === 'OWNER') || !!my?.canComment
-                      };
-                      window.__COL_PRIV__ = _priv; 
-                      return null;
-                  })()}
-
-                    {((window.__COL_PRIV__ && window.__COL_PRIV__.canAddFeed) ? (
+                    {myPriv.canAddFeed ? (
                     <div style={{ marginBottom: '2rem' }}>
                       <input
                         placeholder="🌐 URL RSS"
                         value={newFeedUrl}
                         onChange={(e) => setNewFeedUrl(e.target.value)}
                         style={{
-                          width: '100%',
+                          width: '95%',
                           padding: '0.75rem',
                           border: '2px solid #E2E8F0',
                           borderRadius: '12px',
@@ -1166,7 +1141,7 @@ const handleDeleteMessage = async (id) => {
                         marginBottom: '0.5rem',
                         background: 'rgba(255,255,255,0.8)'
                       }} />
-                      <ul style={{ maxHeight: '100px', overflowY: 'auto', background: 'rgba(255,255,255,0.9)', borderRadius: '8px', padding: '0.5rem' }}>
+                      <ul style={{ maxHeight: '100px', overflowY: 'auto', background: 'rgba(255,255,255,0.9)', borderRadius: '8px', padding: '0.5rem',marginBottom: '0.75rem' }}>
                         {tagData?.allTags?.filter(t => t.startsWith(tagInput)).map(t => 
                           <li key={t} onClick={() => addTag(t)} style={{ 
                             padding: '0.25rem', 
@@ -1197,7 +1172,7 @@ const handleDeleteMessage = async (id) => {
                         marginBottom: '0.5rem',
                         background: 'rgba(255,255,255,0.8)'
                       }} />
-                      <ul style={{ maxHeight: '100px', overflowY: 'auto', background: 'rgba(255,255,255,0.9)', borderRadius: '8px', padding: '0.5rem' }}>
+                      <ul style={{ maxHeight: '100px', overflowY: 'auto', background: 'rgba(255,255,255,0.9)', borderRadius: '8px', padding: '0.5rem',marginBottom: '0.75rem' }}>
                         {categoryData?.allCategories?.filter(c => c.startsWith(categoryInput)).map(c => 
                           <li key={c} onClick={() => addCategory(c)} style={{ 
                             padding: '0.25rem', 
@@ -1238,6 +1213,7 @@ const handleDeleteMessage = async (id) => {
                       </button>
                       <div style={{ marginTop: '1rem' }}>
                         <label htmlFor="opmlUpload" style={{
+                          width: '90%',
                           display: 'inline-block',
                           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                           color: 'white',
@@ -1259,7 +1235,7 @@ const handleDeleteMessage = async (id) => {
                         </label>
                       </div>
                     </div>
-                    ) : null)}
+                    ) : null}
                     
                     <h4 style={{
                       color: '#2D3748',
@@ -1270,55 +1246,116 @@ const handleDeleteMessage = async (id) => {
                       alignItems: 'center',
                       gap: '0.5rem'
                     }}>👥 Membres</h4>
-                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.5rem 0' }}>
+                    <ul style={{ 
+                      listStyle: 'none', 
+                      padding: 0, 
+                      margin: '0 0 1.5rem 0' 
+                    }}>
                       {col.members.map((m) => (
-                        <li key={m.user.id} style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '0.75rem',
-                          background: 'rgba(237,242,247,0.8)',
-                          borderRadius: '12px',
-                          marginBottom: '0.5rem',
-                          fontSize: '14px',
-                          border: '1px solid rgba(226,232,240,0.6)',
-                          backdropFilter: 'blur(5px)'
-                        }}>
-                          <span style={{ fontWeight: '600' }}>
+                        <li 
+                          key={m.user.id} 
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.85rem 1rem',
+                            background: 'rgba(255, 255, 255, 0.85)',
+                            borderRadius: '14px',
+                            marginBottom: '0.6rem',
+                            fontSize: '14px',
+                            border: '1px solid rgba(226,232,240,0.6)',
+                            backdropFilter: 'blur(6px)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                            transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+                          }}
+                        >
+                          <span style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                             {m.user.name} 
                             <span style={{ 
-                              marginLeft: '0.5rem',
-                              background: m.role === 'OWNER' ? 'rgba(245,101,101,0.2)' : 'rgba(66,153,225,0.2)',
+                              background: m.role === 'OWNER' ? 'rgba(245,101,101,0.15)' : 'rgba(66,153,225,0.15)',
                               color: m.role === 'OWNER' ? '#E53E3E' : '#3182CE',
-                              padding: '0.2rem 0.5rem',
-                              borderRadius: '6px',
+                              padding: '0.25rem 0.6rem',
+                              borderRadius: '8px',
                               fontSize: '12px',
                               fontWeight: '700'
                             }}>
                               {m.role}
                             </span>
-                            <span style={{ marginLeft: '0.5rem' }}>
-                                {m.role === 'OWNER' || m.canRead ? <span title="Lecture" style={{ marginRight: '0.3rem' }}>👁️</span> : null}
-                                {m.role === 'OWNER' || m.canAddFeed ? <span title="Ajout de flux" style={{ marginRight: '0.3rem' }}>➕</span> : null}
-                                {m.role === 'OWNER' || m.canComment ? <span title="Commentaire" style={{ marginRight: '0.3rem' }}>💬</span> : null}
-                              </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                              {m.role === 'OWNER' || m.canRead ? <span title="Lecture">👁️</span> : null}
+                              {m.role === 'OWNER' || m.canAddFeed ? <span title="Ajout de flux">➕</span> : null}
+                              {m.role === 'OWNER' || m.canComment ? <span title="Commentaire">💬</span> : null}
+                            </span>
                           </span>
+
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
-                              {(col.members.find(mm => mm.user.id === meData?.me?.id)?.role === 'OWNER') && m.role !== 'OWNER' && (
-                                <button
-                                  onClick={() => { setEditingMemberId(m.user.id); setEditingCanRead(!!m.canRead); setEditingCanAdd(!!m.canAddFeed); setEditingCanComment(!!m.canComment); }}
-                                  style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer' }}
-                                >🔧</button>
-                              )}
-                              <button 
-                                onClick={() => handleRemoveMember(m.user.id)}
-                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer' }}
-                              >❌</button>
-                             </div>
-              
+                            {(col.members.find(mm => mm.user.id === meData?.me?.id)?.role === 'OWNER') && m.role !== 'OWNER' && (
+                              <button
+                                onClick={() => openEditPrivileges(m)}
+                                style={{ 
+                                  background: 'rgba(99,102,241,0.1)', 
+                                  border: '1px solid rgba(99,102,241,0.3)', 
+                                  borderRadius: '8px', 
+                                  padding: '0.45rem 0.55rem', 
+                                  cursor: 'pointer',
+                                  transition: 'background 0.2s ease',
+                                  fontSize: '14px'
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.2)'}
+                                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.1)'}
+                                title="Modifier privilèges"
+                              >🔧</button>
+                            )}
+                            <button 
+                              onClick={() => handleRemoveMember(m.user.id)}
+                              style={{ 
+                                background: 'rgba(239,68,68,0.1)', 
+                                border: '1px solid rgba(239,68,68,0.3)', 
+                                borderRadius: '8px', 
+                                padding: '0.45rem 0.55rem', 
+                                cursor: 'pointer',
+                                transition: 'background 0.2s ease',
+                                fontSize: '14px'
+                              }}
+                              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
+                              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+                              title="Supprimer membre"
+                            >❌</button>
+                          </div>
+
+                          {editingMemberId === m.user.id && (
+                            <div style={{ 
+                              marginTop: '0.75rem', 
+                              padding: '0.75rem', 
+                              border: '1px solid #E2E8F0', 
+                              borderRadius: '12px', 
+                              background: 'rgba(255,255,255,0.9)', 
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.04)' 
+                            }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                <label><input type="checkbox" checked={editingCanRead} onChange={e => setEditingCanRead(e.target.checked)} /> Lecture</label>
+                                <label><input type="checkbox" checked={editingCanAdd} onChange={e => setEditingCanAdd(e.target.checked)} /> Ajout flux</label>
+                                <label><input type="checkbox" checked={editingCanComment} onChange={e => setEditingCanComment(e.target.checked)} /> Commentaire</label>
+                              </div>
+                              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                <button onClick={() => setEditingMemberId(null)} style={{ padding: '0.4rem 0.7rem', borderRadius: '6px', background: '#EDF2F7', border: 'none' }}>Annuler</button>
+                                <button onClick={() => handleRemoveAllPrivileges(m.user.id)} style={{ padding: '0.4rem 0.7rem', borderRadius: '6px', background: '#FED7D7', border: 'none' }}>Supprimer privilèges</button>
+                                <button onClick={handleSaveMemberPrivileges} style={{ padding: '0.4rem 0.7rem', borderRadius: '6px', background: '#C6F6D5', border: 'none' }}>Enregistrer</button>
+                              </div>
+                            </div>
+                          )}
                         </li>
                       ))}
                     </ul>
+
                     
                     <div style={{ marginBottom: '2rem' }}>
                       <input
@@ -1326,7 +1363,7 @@ const handleDeleteMessage = async (id) => {
                         value={newMemberEmail}
                         onChange={(e) => setNewMemberEmail(e.target.value)}
                         style={{
-                          width: '100%',
+                          width: '95%',
                           padding: '0.75rem',
                           border: '2px solid #E2E8F0',
                           borderRadius: '12px',
@@ -1390,104 +1427,104 @@ const handleDeleteMessage = async (id) => {
                       gap: '0.5rem'
                     }}>💬 Chat</h4>
                     
-<ul style={{ 
-  listStyle: 'none', 
-  padding: '1rem', 
-  margin: '0 0 1.5rem 0',
-  maxHeight: '150px',
-  overflowY: 'auto',
-  background: 'rgba(247,250,252,0.9)',
-  borderRadius: '15px',
-  border: '2px solid rgba(226,232,240,0.4)',
-  backdropFilter: 'blur(10px)'
-}}>
-  {col.messages.map((msg) => (
-    <li key={msg.id} style={{
-      marginBottom: '0.75rem',
-      fontSize: '14px',
-      lineHeight: '1.5',
-      padding: '0.75rem',
-      background: 'rgba(255,255,255,0.7)',
-      borderRadius: '12px',
-      border: '1px solid rgba(226,232,240,0.3)'
-    }}>
-      <b style={{ color: '#667eea', fontWeight: '700' }}>{msg.author.name}:</b>{' '}
-      {editingMessageId === msg.id ? (
-        <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <input
-            value={editingMessageContent}
-            onChange={(e) => setEditingMessageContent(e.target.value)}
-            style={{
-              flex: 1,
-              padding: '0.5rem',
-              fontSize: '13px',
-              borderRadius: '8px',
-              border: '1px solid #E2E8F0',
-              background: 'rgba(255,255,255,0.9)'
-            }}
-          />
-          <button onClick={() => handleEditMessage(msg.id)} style={{ 
-            background: 'rgba(72,187,120,0.2)', 
-            border: 'none', 
-            borderRadius: '6px', 
-            padding: '0.25rem 0.5rem',
-            cursor: 'pointer'
-          }}>✅</button>
-          <button onClick={() => setEditingMessageId(null)} style={{ 
-            background: 'rgba(239,68,68,0.2)', 
-            border: 'none', 
-            borderRadius: '6px', 
-            padding: '0.25rem 0.5rem',
-            cursor: 'pointer'
-          }}>❌</button>
-        </div>
-      ) : (
-        <div>
-          <span style={{ color: '#4A5568' }}>{msg.content}</span>
-          {meData?.me?.id === msg.author.id && (
-            <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.25rem' }}>
-              <button
-                onClick={() => {
-                  setEditingMessageId(msg.id);
-                  setEditingMessageContent(msg.content);
-                }}
-                style={{ 
-                  background: 'rgba(102,126,234,0.15)', 
-                  border: '1px solid rgba(102,126,234,0.2)',
-                  borderRadius: '6px', 
-                  padding: '0.25rem 0.5rem',
-                  cursor: 'pointer',
-                  fontSize: '12px'
-                }}
-              >
-                ✏️
-              </button>
-              <button
-                onClick={() => handleDeleteMessage(msg.id)}
-                style={{ 
-                  background: 'rgba(239,68,68,0.15)', 
-                  border: '1px solid rgba(239,68,68,0.2)',
-                  borderRadius: '6px', 
-                  padding: '0.25rem 0.5rem',
-                  cursor: 'pointer',
-                  fontSize: '12px'
-                }}
-              >
-                🗑️
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </li>
-  ))}
-</ul>
+                    <ul style={{ 
+                      listStyle: 'none', 
+                      padding: '1rem', 
+                      margin: '0 0 1.5rem 0',
+                      maxHeight: '150px',
+                      overflowY: 'auto',
+                      background: 'rgba(247,250,252,0.9)',
+                      borderRadius: '15px',
+                      border: '2px solid rgba(226,232,240,0.4)',
+                      backdropFilter: 'blur(10px)'
+                    }}>
+                      {col.messages.map((msg) => (
+                        <li key={msg.id} style={{
+                          marginBottom: '0.75rem',
+                          fontSize: '14px',
+                          lineHeight: '1.5',
+                          padding: '0.75rem',
+                          background: 'rgba(255,255,255,0.7)',
+                          borderRadius: '12px',
+                          border: '1px solid rgba(226,232,240,0.3)'
+                        }}>
+                          <b style={{ color: '#667eea', fontWeight: '700' }}>{msg.author.name}:</b>{' '}
+                          {editingMessageId === msg.id ? (
+                            <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                              <input
+                                value={editingMessageContent}
+                                onChange={(e) => setEditingMessageContent(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '0.5rem',
+                                  fontSize: '13px',
+                                  borderRadius: '8px',
+                                  border: '1px solid #E2E8F0',
+                                  background: 'rgba(255,255,255,0.9)'
+                                }}
+                              />
+                              <button onClick={() => handleEditMessage(msg.id)} style={{ 
+                                background: 'rgba(72,187,120,0.2)', 
+                                border: 'none', 
+                                borderRadius: '6px', 
+                                padding: '0.25rem 0.5rem',
+                                cursor: 'pointer'
+                              }}>✅</button>
+                              <button onClick={() => setEditingMessageId(null)} style={{ 
+                                background: 'rgba(239,68,68,0.2)', 
+                                border: 'none', 
+                                borderRadius: '6px', 
+                                padding: '0.25rem 0.5rem',
+                                cursor: 'pointer'
+                              }}>❌</button>
+                            </div>
+                          ) : (
+                            <div>
+                              <span style={{ color: '#4A5568' }}>{msg.content}</span>
+                              {meData?.me?.id === msg.author.id && (
+                                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.25rem' }}>
+                                  <button
+                                    onClick={() => {
+                                      setEditingMessageId(msg.id);
+                                      setEditingMessageContent(msg.content);
+                                    }}
+                                    style={{ 
+                                      background: 'rgba(102,126,234,0.15)', 
+                                      border: '1px solid rgba(102,126,234,0.2)',
+                                      borderRadius: '6px', 
+                                      padding: '0.25rem 0.5rem',
+                                      cursor: 'pointer',
+                                      fontSize: '12px'
+                                    }}
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteMessage(msg.id)}
+                                    style={{ 
+                                      background: 'rgba(239,68,68,0.15)', 
+                                      border: '1px solid rgba(239,68,68,0.2)',
+                                      borderRadius: '6px', 
+                                      padding: '0.25rem 0.5rem',
+                                      cursor: 'pointer',
+                                      fontSize: '12px'
+                                    }}
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
                     <textarea
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="💭 Votre message"
                       style={{
-                        width: '100%',
+                        width: '95%',
                         padding: '0.75rem',
                         border: '2px solid #E2E8F0',
                         borderRadius: '12px',
@@ -1599,135 +1636,174 @@ const handleDeleteMessage = async (id) => {
         </aside>
 
         {/* ARTICLES */}
-        <section style={{
-          flex: 1,
-          padding: '2rem',
-          overflowY: 'auto',
-          background: 'rgba(255,255,255,0.4)',
-          backdropFilter: 'blur(10px)'
-        }}>
+        <section className="article-section" style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+          <div style={{ marginBottom: '2rem' }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            marginBottom: '2rem',
             gap: '1rem'
           }}>
-          <input
-            placeholder="🔍 Recherche..."
-            value={searchQuery}
-            onChange={(e) => {
-              const value = e.target.value;
-              setSearchQuery(value);
-              if (value.length >= 2) {
-                clearTimeout(window.searchDebounce);
-                window.searchDebounce = setTimeout(() => {
-                  window.searchReady = true;
-                }, 500);
-              } else {
-                window.searchReady = false;
-              }
-            }}
-            style={{
-              flex: 1,
-              padding: '1rem 1.5rem',
-              border: '2px solid rgba(226,232,240,0.6)',
-              borderRadius: '30px',
-              fontSize: '16px',
-              outline: 'none',
-              transition: 'all 0.3s ease',
-              background: 'rgba(255,255,255,0.9)',
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = '#667eea';
-              e.target.style.boxShadow = '0 4px 25px rgba(102,126,234,0.2)';
-              e.target.style.transform = 'translateY(-2px)';
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = 'rgba(226,232,240,0.6)';
-              e.target.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
-              e.target.style.transform = 'translateY(0)';
-            }}
-          />
-          <button 
-            onClick={() => {
-              if (window.searchReady) {
-                handleSearch();
-              } else {
-                console.log("Not ready: type at least 2 characters and wait a moment.");
-              }
-            }}
-            style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              border: 'none',
-              padding: '1rem 2rem',
-              borderRadius: '30px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: '600',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 4px 20px rgba(102,126,234,0.3)'
-            }}
-            onMouseOver={(e) => {
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 8px 30px rgba(102,126,234,0.4)';
-            }}
-            onMouseOut={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 20px rgba(102,126,234,0.3)';
-            }}
-          >
-            🔎 Rechercher
-          </button>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', padding: '1rem' }}>
-            <select value={selectedSource} onChange={e => setSelectedSource(e.target.value)}>
-              <option value="">Toutes les sources</option>
-              {(collectionsData?.collections || []).flatMap(col => col.feeds || []).map(feed => (
-                <option key={feed.id} value={feed.id}>{feed.title}</option>
-              ))}
-            </select>
+            <input
+              placeholder="🔍 Recherche..."
+              value={searchQuery}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSearchQuery(value);
+                if (value.length >= 2) {
+                  clearTimeout(window.searchDebounce);
+                  window.searchDebounce = setTimeout(() => {
+                    window.searchReady = true;
+                  }, 500);
+                } else {
+                  window.searchReady = false;
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: '1rem 1.5rem',
+                border: '2px solid rgba(226,232,240,0.6)',
+                borderRadius: '30px',
+                fontSize: '16px',
+                outline: 'none',
+                transition: 'all 0.3s ease',
+                background: 'rgba(255,255,255,0.9)',
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#667eea';
+                e.target.style.boxShadow = '0 4px 25px rgba(102,126,234,0.2)';
+                e.target.style.transform = 'translateY(-2px)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(226,232,240,0.6)';
+                e.target.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
+                e.target.style.transform = 'translateY(0)';
+              }}
+            />
 
-            <select value={selectedTag} onChange={e => setSelectedTag(e.target.value)}>
-              <option value="">Tous les tags</option>
-              {(tagData?.allTags || []).map(tag => (
-                <option key={tag} value={tag}>#{tag}</option>
-              ))}
-            </select>
+            <button
+              onClick={() => setShowFilters(v => !v)}
+              style={{
+                background: showFilters
+                  ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                  : 'rgba(255,255,255,0.9)',
+                color: showFilters ? 'white' : '#4A5568',
+                border: showFilters ? 'none' : '2px solid rgba(226,232,240,0.6)',
+                padding: '1rem 1.25rem',
+                borderRadius: '30px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: '600',
+                transition: 'all 0.3s ease',
+                boxShadow: showFilters
+                  ? '0 4px 20px rgba(102,126,234,0.3)'
+                  : '0 4px 12px rgba(0,0,0,0.06)'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.transform = 'translateY(-2px)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.transform = 'translateY(0)';
+              }}
+            >
+              {showFilters ? '⬆️ Masquer filtres' : '🎛️ Filtres'}
+            </button>
 
-            <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
-              <option value="">Toutes les catégories</option>
-              {(categoryData?.allCategories || []).map(cat => (
-                <option key={cat} value={cat}>[{cat}]</option>
-              ))}
-            </select>
-
-            <select value={onlyUnread === null ? '' : onlyUnread ? 'unread' : 'read'} onChange={e => {
-              const v = e.target.value;
-              setOnlyUnread(v === '' ? null : v === 'unread');
-            }}>
-              <option value="">Tous les statuts</option>
-              <option value="unread">Non lus</option>
-              <option value="read">Lus</option>
-            </select>
-
-            <select value={onlyFavorites === null ? '' : onlyFavorites ? 'fav' : 'nofav'} onChange={e => {
-              const v = e.target.value;
-              setOnlyFavorites(v === '' ? null : v === 'fav');
-            }}>
-              <option value="">Tous</option>
-              <option value="fav">Favoris</option>
-              <option value="nofav">Non Favoris</option>
-            </select>
-
-            <button onClick={handleSearch}>🔍 Filtrer</button>
+            <button
+              onClick={() => {
+                if (window.searchReady) {
+                  handleSearch();
+                } else {
+                  console.log("Not ready: type at least 2 characters and wait a moment.");
+                }
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '1rem 2rem',
+                borderRadius: '30px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: '600',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 20px rgba(102,126,234,0.3)'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 8px 30px rgba(102,126,234,0.4)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 20px rgba(102,126,234,0.3)';
+              }}
+            >
+              🔎 Rechercher
+            </button>
           </div>
 
+          {showFilters && (
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '1rem',
+              padding: '1rem 0'
+            }}>
+              <select value={selectedSource} onChange={e => setSelectedSource(e.target.value)}>
+                <option value="">Toutes les sources</option>
+                {(collectionsData?.collections || [])
+                  .flatMap(col => col.feeds || [])
+                  .map(feed => (
+                    <option key={feed.id} value={feed.id}>{feed.title}</option>
+                  ))}
+              </select>
 
-          </div>
+              <select value={selectedTag} onChange={e => setSelectedTag(e.target.value)}>
+                <option value="">Tous les tags</option>
+                {(tagData?.allTags || []).map(tag => (
+                  <option key={tag} value={tag}>#{tag}</option>
+                ))}
+              </select>
 
-          {!(window.__COL_PRIV__ && window.__COL_PRIV__.canRead) ? (
+              <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
+                <option value="">Toutes les catégories</option>
+                {(categoryData?.allCategories || []).map(cat => (
+                  <option key={cat} value={cat}>[{cat}]</option>
+                ))}
+              </select>
+
+              <select
+                value={onlyUnread === null ? '' : (onlyUnread ? 'unread' : 'read')}
+                onChange={e => {
+                  const v = e.target.value;
+                  setOnlyUnread(v === '' ? null : v === 'unread');
+                }}
+              >
+                <option value="">Tous les statuts</option>
+                <option value="unread">Non lus</option>
+                <option value="read">Lus</option>
+              </select>
+
+              <select
+                value={onlyFavorites === null ? '' : (onlyFavorites ? 'fav' : 'nofav')}
+                onChange={e => {
+                  const v = e.target.value;
+                  setOnlyFavorites(v === '' ? null : v === 'fav');
+                }}
+              >
+                <option value="">Tous</option>
+                <option value="fav">Favoris</option>
+                <option value="nofav">Non Favoris</option>
+              </select>
+
+              <button onClick={handleSearch}>🔍 Filtrer</button>
+            </div>
+          )}
+                </div>
+
+
+          {!myPriv.canRead ? (
             <div style={{ padding: '1rem', color: '#C05621', background: 'rgba(254,235,200,0.6)', borderRadius: '12px', border: '1px solid #F6AD55' }}>
               Accès restreint: vous n’avez pas le privilège de lecture pour cette collection.
             </div>
@@ -1752,61 +1828,61 @@ const handleDeleteMessage = async (id) => {
                 📰 Articles – {articlesData.collection.name}
               </h2>
 
-{selectedFeed && (() => {
-  const feedInfo = collectionsData?.collections
-    ?.find(col => col.id === selectedCollection)
-    ?.feeds?.find(f => f.id === selectedFeed);
+              {selectedFeed && (() => {
+                const feedInfo = collectionsData?.collections
+                  ?.find(col => col.id === selectedCollection)
+                  ?.feeds?.find(f => f.id === selectedFeed);
 
-  return feedInfo ? (
-    <div style={{ 
-      marginBottom: '2rem',
-      padding: '1.5rem',
-      background: 'rgba(255,255,255,0.9)',
-      borderRadius: '20px',
-      border: '2px solid rgba(226,232,240,0.4)',
-      boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
-      backdropFilter: 'blur(10px)'
-    }}>
-      <h3 style={{ 
-        fontSize: '1.5rem', 
-        marginBottom: '1rem',
-        color: '#2D3748',
-        fontWeight: '700',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem'
-      }}>📡 Flux : {feedInfo.title}</h3>
-      <div style={{ marginBottom: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <span style={{ fontWeight: '600', color: '#4A5568' }}>🏷️ Tags :</span>
-        {(feedInfo.tags || []).map((t, i) => (
-          <span key={i} style={{ 
-            background: 'rgba(102,126,234,0.15)',
-            color: '#667eea',
-            padding: '0.25rem 0.75rem',
-            borderRadius: '12px',
-            fontSize: '14px',
-            fontWeight: '600',
-            border: '1px solid rgba(102,126,234,0.2)'
-          }}>#{t}</span>
-        ))}
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <span style={{ fontWeight: '600', color: '#4A5568' }}>📂 Catégories :</span>
-        {(feedInfo.categories || []).map((c, i) => (
-          <span key={i} style={{ 
-            background: 'rgba(72,187,120,0.15)',
-            color: '#48BB78',
-            padding: '0.25rem 0.75rem',
-            borderRadius: '12px',
-            fontSize: '14px',
-            fontWeight: '600',
-            border: '1px solid rgba(72,187,120,0.2)'
-          }}>[{c}]</span>
-        ))}
-      </div>
-    </div>
-  ) : null;
-})()}
+                return feedInfo ? (
+                  <div style={{ 
+                    marginBottom: '2rem',
+                    padding: '1.5rem',
+                    background: 'rgba(255,255,255,0.9)',
+                    borderRadius: '20px',
+                    border: '2px solid rgba(226,232,240,0.4)',
+                    boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <h3 style={{ 
+                      fontSize: '1.5rem', 
+                      marginBottom: '1rem',
+                      color: '#2D3748',
+                      fontWeight: '700',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>📡 Flux : {feedInfo.title}</h3>
+                    <div style={{ marginBottom: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: '600', color: '#4A5568' }}>🏷️ Tags :</span>
+                      {(feedInfo.tags || []).map((t, i) => (
+                        <span key={i} style={{ 
+                          background: 'rgba(102,126,234,0.15)',
+                          color: '#667eea',
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '12px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          border: '1px solid rgba(102,126,234,0.2)'
+                        }}>#{t}</span>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: '600', color: '#4A5568' }}>📂 Catégories :</span>
+                      {(feedInfo.categories || []).map((c, i) => (
+                        <span key={i} style={{ 
+                          background: 'rgba(72,187,120,0.15)',
+                          color: '#48BB78',
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '12px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          border: '1px solid rgba(72,187,120,0.2)'
+                        }}>[{c}]</span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
 
               
               <div style={{
@@ -2134,7 +2210,7 @@ const handleDeleteMessage = async (id) => {
                         ))}
                       </div>
 
-                      {(window.__COL_PRIV__ && window.__COL_PRIV__.canComment) && (
+                      {myPriv.canComment && (
                       <div style={{
                         display: 'flex',
                         gap: '1rem',
@@ -2205,5 +2281,6 @@ const handleDeleteMessage = async (id) => {
     </div>
   );
 }
+
 
 export default HomePage;
