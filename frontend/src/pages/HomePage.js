@@ -726,7 +726,7 @@ const handleDeleteMessage = async (id) => {
       }}>
         <h1 style={{
           margin: 0,
-          fontSize: '2.5rem',
+          fontSize: '5rem',
           fontWeight: '800',
           letterSpacing: '0.1em',
           textShadow: '0 2px 4px rgba(0,0,0,0.1)',
@@ -1256,8 +1256,8 @@ const handleDeleteMessage = async (id) => {
                           key={m.user.id} 
                           style={{
                             display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
+                            flexDirection: 'column',           // ⬅️ colonne pour empiler "row" + "editor"
+                            alignItems: 'stretch',
                             padding: '0.85rem 1rem',
                             background: 'rgba(255, 255, 255, 0.85)',
                             borderRadius: '14px',
@@ -1277,62 +1277,72 @@ const handleDeleteMessage = async (id) => {
                             e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
                           }}
                         >
-                          <span style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            {m.user.name} 
-                            <span style={{ 
-                              background: m.role === 'OWNER' ? 'rgba(245,101,101,0.15)' : 'rgba(66,153,225,0.15)',
-                              color: m.role === 'OWNER' ? '#E53E3E' : '#3182CE',
-                              padding: '0.25rem 0.6rem',
-                              borderRadius: '8px',
-                              fontSize: '12px',
-                              fontWeight: '700'
-                            }}>
-                              {m.role}
+                          {/* ---- LIGNE PRINCIPALE (row) ---- */}
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            width: '100%'
+                          }}>
+                            <span style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              {m.user.name} 
+                              <span style={{ 
+                                background: m.role === 'OWNER' ? 'rgba(245,101,101,0.15)' : 'rgba(66,153,225,0.15)',
+                                color: m.role === 'OWNER' ? '#E53E3E' : '#3182CE',
+                                padding: '0.25rem 0.6rem',
+                                borderRadius: '8px',
+                                fontSize: '12px',
+                                fontWeight: '700'
+                              }}>
+                                {m.role}
+                              </span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                {m.role === 'OWNER' || m.canRead ? <span title="Lecture">👁️</span> : null}
+                                {m.role === 'OWNER' || m.canAddFeed ? <span title="Ajout de flux">➕</span> : null}
+                                {m.role === 'OWNER' || m.canComment ? <span title="Commentaire">💬</span> : null}
+                              </span>
                             </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                              {m.role === 'OWNER' || m.canRead ? <span title="Lecture">👁️</span> : null}
-                              {m.role === 'OWNER' || m.canAddFeed ? <span title="Ajout de flux">➕</span> : null}
-                              {m.role === 'OWNER' || m.canComment ? <span title="Commentaire">💬</span> : null}
-                            </span>
-                          </span>
 
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            {(col.members.find(mm => mm.user.id === meData?.me?.id)?.role === 'OWNER') && m.role !== 'OWNER' && (
-                              <button
-                                onClick={() => openEditPrivileges(m)}
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              {(col.members.find(mm => mm.user.id === meData?.me?.id)?.role === 'OWNER') && m.role !== 'OWNER' && (
+                                <button
+                                  onClick={() => openEditPrivileges(m)}
+                                  style={{ 
+                                    background: 'rgba(99,102,241,0.1)', 
+                                    border: '1px solid rgba(99,102,241,0.3)', 
+                                    borderRadius: '8px', 
+                                    padding: '0.45rem 0.55rem', 
+                                    cursor: 'pointer',
+                                    transition: 'background 0.2s ease',
+                                    fontSize: '14px'
+                                  }}
+                                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.2)'}
+                                  onMouseOut={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.1)'}
+                                  title="Modifier privilèges"
+                                >🔧</button>
+                              )}
+                              <button 
+                                onClick={() => handleRemoveMember(m.user.id)}
                                 style={{ 
-                                  background: 'rgba(99,102,241,0.1)', 
-                                  border: '1px solid rgba(99,102,241,0.3)', 
+                                  background: 'rgba(239,68,68,0.1)', 
+                                  border: '1px solid rgba(239,68,68,0.3)', 
                                   borderRadius: '8px', 
                                   padding: '0.45rem 0.55rem', 
                                   cursor: 'pointer',
                                   transition: 'background 0.2s ease',
                                   fontSize: '14px'
                                 }}
-                                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.2)'}
-                                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.1)'}
-                                title="Modifier privilèges"
-                              >🔧</button>
-                            )}
-                            <button 
-                              onClick={() => handleRemoveMember(m.user.id)}
-                              style={{ 
-                                background: 'rgba(239,68,68,0.1)', 
-                                border: '1px solid rgba(239,68,68,0.3)', 
-                                borderRadius: '8px', 
-                                padding: '0.45rem 0.55rem', 
-                                cursor: 'pointer',
-                                transition: 'background 0.2s ease',
-                                fontSize: '14px'
-                              }}
-                              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
-                              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
-                              title="Supprimer membre"
-                            >❌</button>
+                                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
+                                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+                                title="Supprimer membre"
+                              >❌</button>
+                            </div>
                           </div>
 
+                          {/* ---- PANNEAU D’ÉDITION (sous la row) ---- */}
                           {editingMemberId === m.user.id && (
                             <div style={{ 
+                              width: '92%',                         
                               marginTop: '0.75rem', 
                               padding: '0.75rem', 
                               border: '1px solid #E2E8F0', 
@@ -1356,6 +1366,7 @@ const handleDeleteMessage = async (id) => {
                       ))}
                     </ul>
 
+
                     
                     <div style={{ marginBottom: '2rem' }}>
                       <input
@@ -1363,7 +1374,7 @@ const handleDeleteMessage = async (id) => {
                         value={newMemberEmail}
                         onChange={(e) => setNewMemberEmail(e.target.value)}
                         style={{
-                          width: '95%',
+                          width: '92%',
                           padding: '0.75rem',
                           border: '2px solid #E2E8F0',
                           borderRadius: '12px',
@@ -1524,7 +1535,7 @@ const handleDeleteMessage = async (id) => {
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="💭 Votre message"
                       style={{
-                        width: '95%',
+                        width: '92%',
                         padding: '0.75rem',
                         border: '2px solid #E2E8F0',
                         borderRadius: '12px',
@@ -1637,7 +1648,7 @@ const handleDeleteMessage = async (id) => {
 
         {/* ARTICLES */}
         <section className="article-section" style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
-          <div style={{ marginBottom: '2rem' }}>
+        <div style={{ marginBottom: '2rem' }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -1660,25 +1671,28 @@ const handleDeleteMessage = async (id) => {
               }}
               style={{
                 flex: 1,
-                padding: '1rem 1.5rem',
-                border: '2px solid rgba(226,232,240,0.6)',
-                borderRadius: '30px',
+                padding: '1.2rem 2rem',
+                border: 'none',
+                borderRadius: '25px',
                 fontSize: '16px',
+                fontWeight: '400',
                 outline: 'none',
-                transition: 'all 0.3s ease',
-                background: 'rgba(255,255,255,0.9)',
-                backdropFilter: 'blur(10px)',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(248,250,252,0.9))',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)',
+                color: '#2D3748',
+                letterSpacing: '0.3px'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#667eea';
-                e.target.style.boxShadow = '0 4px 25px rgba(102,126,234,0.2)';
-                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 12px 40px rgba(102,126,234,0.15), 0 0 0 3px rgba(102,126,234,0.1), inset 0 1px 0 rgba(255,255,255,0.9)';
+                e.target.style.transform = 'translateY(-3px)';
+                e.target.style.background = 'linear-gradient(145deg, rgba(255,255,255,1), rgba(251,253,255,0.95))';
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(226,232,240,0.6)';
-                e.target.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
+                e.target.style.boxShadow = '0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)';
                 e.target.style.transform = 'translateY(0)';
+                e.target.style.background = 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(248,250,252,0.9))';
               }}
             />
 
@@ -1687,24 +1701,34 @@ const handleDeleteMessage = async (id) => {
               style={{
                 background: showFilters
                   ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                  : 'rgba(255,255,255,0.9)',
+                  : 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(248,250,252,0.9))',
                 color: showFilters ? 'white' : '#4A5568',
-                border: showFilters ? 'none' : '2px solid rgba(226,232,240,0.6)',
-                padding: '1rem 1.25rem',
-                borderRadius: '30px',
+                border: 'none',
+                padding: '1.2rem 1.8rem',
+                borderRadius: '25px',
                 cursor: 'pointer',
                 fontSize: '16px',
                 fontWeight: '600',
-                transition: 'all 0.3s ease',
+                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                 boxShadow: showFilters
-                  ? '0 4px 20px rgba(102,126,234,0.3)'
-                  : '0 4px 12px rgba(0,0,0,0.06)'
+                  ? '0 8px 32px rgba(102,126,234,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
+                  : '0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)',
+                backdropFilter: 'blur(20px)',
+                letterSpacing: '0.3px'
               }}
               onMouseOver={(e) => {
-                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.transform = 'translateY(-3px)';
+                if (showFilters) {
+                  e.target.style.boxShadow = '0 16px 48px rgba(102,126,234,0.35), inset 0 1px 0 rgba(255,255,255,0.3)';
+                } else {
+                  e.target.style.boxShadow = '0 12px 40px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.9)';
+                }
               }}
               onMouseOut={(e) => {
                 e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = showFilters
+                  ? '0 8px 32px rgba(102,126,234,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
+                  : '0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)';
               }}
             >
               {showFilters ? '⬆️ Masquer filtres' : '🎛️ Filtres'}
@@ -1722,21 +1746,25 @@ const handleDeleteMessage = async (id) => {
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: 'white',
                 border: 'none',
-                padding: '1rem 2rem',
-                borderRadius: '30px',
+                padding: '1.2rem 2.5rem',
+                borderRadius: '25px',
                 cursor: 'pointer',
                 fontSize: '16px',
                 fontWeight: '600',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 20px rgba(102,126,234,0.3)'
+                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 8px 32px rgba(102,126,234,0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
+                letterSpacing: '0.3px',
+                textShadow: '0 1px 2px rgba(0,0,0,0.1)'
               }}
               onMouseOver={(e) => {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 8px 30px rgba(102,126,234,0.4)';
+                e.target.style.transform = 'translateY(-3px)';
+                e.target.style.boxShadow = '0 16px 48px rgba(102,126,234,0.4), inset 0 1px 0 rgba(255,255,255,0.3)';
+                e.target.style.background = 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)';
               }}
               onMouseOut={(e) => {
                 e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 20px rgba(102,126,234,0.3)';
+                e.target.style.boxShadow = '0 8px 32px rgba(102,126,234,0.25), inset 0 1px 0 rgba(255,255,255,0.2)';
+                e.target.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
               }}
             >
               🔎 Rechercher
@@ -1747,10 +1775,33 @@ const handleDeleteMessage = async (id) => {
             <div style={{
               display: 'flex',
               flexWrap: 'wrap',
-              gap: '1rem',
-              padding: '1rem 0'
+              gap: '1.2rem',
+              padding: '2rem 0.5rem 0.5rem',
+              marginTop: '1rem',
+              background: 'linear-gradient(145deg, rgba(255,255,255,0.4), rgba(248,250,252,0.3))',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '20px',
+              border: '1px solid rgba(255,255,255,0.2)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 24px rgba(0,0,0,0.06)'
             }}>
-              <select value={selectedSource} onChange={e => setSelectedSource(e.target.value)}>
+              <select 
+                value={selectedSource} 
+                onChange={e => setSelectedSource(e.target.value)}
+                style={{
+                  padding: '0.8rem 1.2rem',
+                  borderRadius: '15px',
+                  border: 'none',
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.9), rgba(248,250,252,0.8))',
+                  color: '#4A5568',
+                  fontSize: '15px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7)',
+                  outline: 'none',
+                  minWidth: '140px'
+                }}
+              >
                 <option value="">Toutes les sources</option>
                 {(collectionsData?.collections || [])
                   .flatMap(col => col.feeds || [])
@@ -1759,14 +1810,48 @@ const handleDeleteMessage = async (id) => {
                   ))}
               </select>
 
-              <select value={selectedTag} onChange={e => setSelectedTag(e.target.value)}>
+              <select 
+                value={selectedTag} 
+                onChange={e => setSelectedTag(e.target.value)}
+                style={{
+                  padding: '0.8rem 1.2rem',
+                  borderRadius: '15px',
+                  border: 'none',
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.9), rgba(248,250,252,0.8))',
+                  color: '#4A5568',
+                  fontSize: '15px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7)',
+                  outline: 'none',
+                  minWidth: '130px'
+                }}
+              >
                 <option value="">Tous les tags</option>
                 {(tagData?.allTags || []).map(tag => (
                   <option key={tag} value={tag}>#{tag}</option>
                 ))}
               </select>
 
-              <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
+              <select 
+                value={selectedCategory} 
+                onChange={e => setSelectedCategory(e.target.value)}
+                style={{
+                  padding: '0.8rem 1.2rem',
+                  borderRadius: '15px',
+                  border: 'none',
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.9), rgba(248,250,252,0.8))',
+                  color: '#4A5568',
+                  fontSize: '15px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7)',
+                  outline: 'none',
+                  minWidth: '160px'
+                }}
+              >
                 <option value="">Toutes les catégories</option>
                 {(categoryData?.allCategories || []).map(cat => (
                   <option key={cat} value={cat}>[{cat}]</option>
@@ -1778,6 +1863,20 @@ const handleDeleteMessage = async (id) => {
                 onChange={e => {
                   const v = e.target.value;
                   setOnlyUnread(v === '' ? null : v === 'unread');
+                }}
+                style={{
+                  padding: '0.8rem 1.2rem',
+                  borderRadius: '15px',
+                  border: 'none',
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.9), rgba(248,250,252,0.8))',
+                  color: '#4A5568',
+                  fontSize: '15px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7)',
+                  outline: 'none',
+                  minWidth: '130px'
                 }}
               >
                 <option value="">Tous les statuts</option>
@@ -1791,16 +1890,58 @@ const handleDeleteMessage = async (id) => {
                   const v = e.target.value;
                   setOnlyFavorites(v === '' ? null : v === 'fav');
                 }}
+                style={{
+                  padding: '0.8rem 1.2rem',
+                  borderRadius: '15px',
+                  border: 'none',
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.9), rgba(248,250,252,0.8))',
+                  color: '#4A5568',
+                  fontSize: '15px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7)',
+                  outline: 'none',
+                  minWidth: '120px'
+                }}
               >
                 <option value="">Tous</option>
                 <option value="fav">Favoris</option>
                 <option value="nofav">Non Favoris</option>
               </select>
 
-              <button onClick={handleSearch}>🔍 Filtrer</button>
+              <button 
+                onClick={handleSearch}
+                style={{
+                  padding: '0.8rem 1.5rem',
+                  borderRadius: '15px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
+                  color: 'white',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 16px rgba(72,187,120,0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
+                  letterSpacing: '0.2px',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 8px 24px rgba(72,187,120,0.35), inset 0 1px 0 rgba(255,255,255,0.3)';
+                  e.target.style.background = 'linear-gradient(135deg, #38a169 0%, #2f855a 100%)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 4px 16px rgba(72,187,120,0.25), inset 0 1px 0 rgba(255,255,255,0.2)';
+                  e.target.style.background = 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)';
+                }}
+              >
+                🔍 Filtrer
+              </button>
             </div>
           )}
-                </div>
+          </div>
 
 
           {!myPriv.canRead ? (

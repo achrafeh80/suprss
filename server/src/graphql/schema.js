@@ -112,6 +112,7 @@ const typeDefs = gql`
     updateSettings(darkMode: Boolean, fontSize: FontSize): User!
 
     createCollection(name: String!): Collection!
+    renameCollection(id: ID!, name: String!): Collection!
     deleteCollection(id: ID!): Boolean!
 
     addFeed(collectionId: ID!, url: String!, title: String, tags: [String!], categories: [String!]): Feed!

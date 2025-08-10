@@ -409,6 +409,26 @@ const resolvers = {
       });
       return collection;
     },
+
+  renameCollection: async (_, { id, name }, { prisma, user }) => {
+    if (!user) throw new Error("Authentification requise.");
+    const collectionId = Number(id);
+
+    const membership = await prisma.collectionMembership.findUnique({
+      where: { userId_collectionId: { userId: user.id, collectionId } }
+    });
+    if (!membership || membership.role !== 'OWNER') {
+      throw new Error("Seul le propriétaire peut renommer la collection.");
+    }
+
+    const updated = await prisma.collection.update({
+      where: { id: collectionId },
+      data: { name }
+    });
+    return updated;
+  },
+
+
     deleteCollection: async (parent, { id }, { prisma, user }) => {
   if (!user) throw new Error("Authentification requise.");
 
