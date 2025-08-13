@@ -6,6 +6,8 @@ const rssParser = new RSSParser();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { PrismaClientKnownRequestError } = require('@prisma/client/runtime');
+const Papa = require('papaparse');
+const xml2js = require('xml2js');
 
 const DateTime = new GraphQLScalarType({
   name: 'DateTime',
@@ -410,23 +412,23 @@ const resolvers = {
       return collection;
     },
 
-  renameCollection: async (_, { id, name }, { prisma, user }) => {
-    if (!user) throw new Error("Authentification requise.");
-    const collectionId = Number(id);
+renameCollection: async (_, { id, name }, { prisma, user }) => {
+  if (!user) throw new Error("Authentification requise.");
+  const collectionId = Number(id);
 
-    const membership = await prisma.collectionMembership.findUnique({
-      where: { userId_collectionId: { userId: user.id, collectionId } }
-    });
-    if (!membership || membership.role !== 'OWNER') {
-      throw new Error("Seul le propriétaire peut renommer la collection.");
-    }
+  const membership = await prisma.collectionMembership.findUnique({
+    where: { userId_collectionId: { userId: user.id, collectionId } }
+  });
+  if (!membership || membership.role !== 'OWNER') {
+    throw new Error("Seul le propriétaire peut renommer la collection.");
+  }
 
-    const updated = await prisma.collection.update({
-      where: { id: collectionId },
-      data: { name }
-    });
-    return updated;
-  },
+  const updated = await prisma.collection.update({
+    where: { id: collectionId },
+    data: { name }
+  });
+  return updated;
+},
 
 
     deleteCollection: async (parent, { id }, { prisma, user }) => {
@@ -570,10 +572,10 @@ const resolvers = {
       // Mettre isShared = true sur la collection si plus d'un membre (optionnel)
       const memberCount = await prisma.collectionMembership.count({ where: { collectionId: colId } });
       if (memberCount > 1) {
-        await prisma.collection.update({
-          where: { id: colId },
-          data: { isShared: true },
-        });
+        await prisma.collection.update({ where: { id: colId }, 
+          data: {       
+            tags: tags || [],
+            categories: categories || [],} });
       }
       return feed;
     },
@@ -1016,104 +1018,189 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
       };
     },
 
-importFeeds: async (_, { collectionId, opml }, { prisma, user }) => {
-  if (!user) throw new Error("Non authentifié");
+    importFeeds: async (_, { collectionId, content, format }, { prisma, user }) => {
+      if (!user) throw new Error("Non authentifié");
 
-  const colId = parseInt(collectionId);
-  if (isNaN(colId)) throw new Error("collectionId invalide");
+      const colId = parseInt(collectionId);
+      if (isNaN(colId)) throw new Error("collectionId invalide");
 
-  const collection = await prisma.collection.findFirst({
-    where: {
-      id: colId,
-      memberships: { some: { userId: user.id } }
-    }
-  });
-  if (!collection) throw new Error("Accès interdit à cette collection.");
+      const collection = await prisma.collection.findFirst({
+        where: {
+          id: colId,
+          memberships: { some: { userId: user.id } }
+        }
+      });
+      if (!collection) throw new Error("Accès interdit à cette collection.");
 
-  const xml2js = require('xml2js');
-  const parser = new xml2js.Parser();
-  const parsed = await parser.parseStringPromise(opml);
-  const outlines = parsed.opml.body?.[0]?.outline || [];
+      // Validate content
+      if (!content || typeof content !== 'string' || content.trim() === '') {
+        throw new Error('Contenu du fichier invalide ou vide.');
+      }
 
-  const rssParser = require('rss-parser');
-  const rss = new rssParser();
+      let feedsToAdd = [];
 
-  for (let item of outlines) {
-    const url = item.$?.xmlUrl;
-    const title = item.$?.title || item.$?.text || url;
-    if (!url) continue;
-
-    let feed; // ✅ Déclarée ici en dehors des blocs conditionnels
-
-    feed = await prisma.feed.findUnique({ where: { url } });
-
-    if (!feed) {
       try {
-        const parsedFeed = await rss.parseURL(url);
-        feed = await prisma.feed.create({
-          data: {
-            title: parsedFeed.title || title || url,
-            url,
-            description: parsedFeed.description || "",
-            tags: [],
-            categories: [],
-            status: "active",
-            updateInterval: 60,
-            lastFetched: new Date()
-          }
-        });
+        format = format.toLowerCase();
 
-        for (let item of parsedFeed.items || []) {
-          const guid = item.guid || item.id || item.link;
-          if (!guid) continue;
-          let pubDate = item.isoDate
-            ? new Date(item.isoDate)
-            : item.pubDate
-            ? new Date(item.pubDate)
-            : new Date();
+        if (format === 'opml') {
+          let parsed;
+          try {
+            const xmlParser = new xml2js.Parser({ explicitArray: false });
+            parsed = await xmlParser.parseStringPromise(content);
+          } catch (err) {
+            throw new Error(`Erreur de parsing OPML: ${err.message}`);
+          }
+          const outlines = parsed?.opml?.body?.outline || [];
+          // Handle both single outline and array of outlines
+          const outlineArray = Array.isArray(outlines) ? outlines : [outlines];
+          for (let item of outlineArray) {
+            if (!item) continue;
+            // Handle nested outlines (e.g., categories in OPML)
+            const items = item.outline ? (Array.isArray(item.outline) ? item.outline : [item.outline]) : [item];
+            for (let subItem of items) {
+              if (!subItem?.$) continue;
+              const url = subItem.$.xmlUrl;
+              const title = subItem.$.title || subItem.$.text || url;
+              if (!url) continue;
+              feedsToAdd.push({ url, title });
+            }
+          }
+        } else if (format === 'xml' || format === 'rss') {
+          const parsedFeed = await rssParser.parseString(content).catch(err => {
+            throw new Error(`Erreur de parsing XML/RSS: ${err.message}`);
+          });
+          const title = parsedFeed.title || '(Sans titre)';
+          const description = parsedFeed.description || '';
+          const url = parsedFeed.feedUrl || parsedFeed.link || '';
+          if (!url) throw new Error('URL du flux non trouvée dans le XML.');
+          feedsToAdd.push({ url, title, description });
+        } else if (format === 'csv') {
+          const parsed = Papa.parse(content, { 
+            header: true, 
+            skipEmptyLines: true,
+            transform: (value) => value.trim()
+          });
+          if (parsed.errors.length > 0) {
+            throw new Error(`Erreur de parsing CSV: ${parsed.errors[0].message}`);
+          }
+          for (let row of parsed.data) {
+            const url = row.url;
+            const title = row.title || url;
+            if (!url) continue;
+            const tags = row.tags ? row.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+            const categories = row.categories ? row.categories.split(',').map(c => c.trim()).filter(Boolean) : [];
+            feedsToAdd.push({ url, title, tags, categories });
+          }
+        } else if (format === 'json') {
+          let parsed;
+          try {
+            parsed = JSON.parse(content);
+          } catch (err) {
+            throw new Error(`Erreur de parsing JSON: ${err.message}`);
+          }
+          if (!Array.isArray(parsed)) {
+            throw new Error('JSON doit être un tableau d\'objets.');
+          }
+          for (let item of parsed) {
+            const url = item.url?.trim();
+            const title = item.title?.trim() || url;
+            if (!url) continue;
+            const tags = Array.isArray(item.tags) ? item.tags.map(t => t.trim()).filter(Boolean) : [];
+            const categories = Array.isArray(item.categories) ? item.categories.map(c => c.trim()).filter(Boolean) : [];
+            feedsToAdd.push({ url, title, tags, categories });
+          }
+        } else {
+          throw new Error('Format non supporté. Utilisez opml, xml, csv ou json.');
+        }
+
+        if (feedsToAdd.length === 0) {
+          throw new Error('Aucun flux valide trouvé dans le fichier.');
+        }
+
+        for (let feedData of feedsToAdd) {
+          const { url, title, description = '', tags = [], categories = [] } = feedData;
 
           try {
-            await prisma.article.create({
-              data: {
-                feedId: feed.id,
-                title: item.title || "(Sans titre)",
-                link: item.link || "",
-                guid,
-                author: item.creator || item.author || "",
-                content: item.contentSnippet || item.content || "",
-                published: pubDate
-              }
-            });
-          } catch (err) {
-            // duplication possible → ignorée
+            new URL(url);
+          } catch {
+            console.warn(`URL invalide ignorée: ${url}`);
+            continue;
           }
+
+          let feed = await prisma.feed.findUnique({ where: { url } });
+
+          if (!feed) {
+            try {
+              const parsedFeed = await rssParser.parseURL(url).catch(err => {
+                throw new Error(`Erreur de parsing du flux ${url}: ${err.message}`);
+              });
+              feed = await prisma.feed.create({
+                data: {
+                  title: parsedFeed.title || title || url,
+                  url,
+                  description: parsedFeed.description || description || "",
+                  tags,
+                  categories,
+                  status: "active",
+                  updateInterval: 60,
+                  lastFetched: new Date()
+                }
+              });
+
+              for (let item of parsedFeed.items || []) {
+                const guid = item.guid || item.id || item.link;
+                if (!guid) continue;
+                let pubDate = item.isoDate
+                  ? new Date(item.isoDate)
+                  : item.pubDate
+                  ? new Date(item.pubDate)
+                  : new Date();
+
+                try {
+                  await prisma.article.create({
+                    data: {
+                      feedId: feed.id,
+                      title: item.title || "(Sans titre)",
+                      link: item.link || "",
+                      guid,
+                      author: item.creator || item.author || "",
+                      content: item.contentSnippet || item.content || "",
+                      published: pubDate
+                    }
+                  });
+                } catch (err) {
+                  console.warn(`Article ignoré pour ${url} (possible duplication): ${err.message}`);
+                }
+              }
+            } catch (err) {
+              console.error(`Erreur lors de l'ajout du flux ${url}:`, err.message);
+              continue;
+            }
+          }
+
+          await prisma.collectionFeed.upsert({
+            where: {
+              collectionId_feedId: {
+                collectionId: colId,
+                feedId: feed.id
+              }
+            },
+            update: {},
+            create: {
+              collection: { connect: { id: colId } },
+              feed: { connect: { id: feed.id } }
+            }
+          });
+
+          console.log(`✅ Feed ajouté : ${feed.title}`);
         }
+
+        return true;
       } catch (err) {
-        console.error("❌ Erreur parsing RSS:", err.message);
-        continue;
+        console.error('Erreur importFeeds:', err);
+        throw new Error(`Échec de l'import: ${err.message}`);
       }
-    }
-
-    // ✅ Correction ici : connect() et pas id direct
-    await prisma.collectionFeed.upsert({
-      where: {
-        collectionId_feedId: {
-          collectionId: colId,
-          feedId: feed.id
-        }
-      },
-      update: {},
-      create: {
-        collection: { connect: { id: colId } },
-        feed: { connect: { id: feed.id } }
-      }
-    });
-
-    console.log(`✅ Feed ajouté : ${feed.title}`);
-  }
-
-  return true;
-},
+    },
 
     exportFeeds: async (parent, { format }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");

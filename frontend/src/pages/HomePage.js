@@ -219,9 +219,6 @@ const DELETE_MESSAGE = gql`
   }
 `;
 
-
-
-
 const ADD_MEMBER = gql`
   mutation AddMember($collectionId: ID!, $userEmail: String!, $role: Role, $canRead: Boolean, $canAddFeed: Boolean, $canComment: Boolean) {
     addMember(collectionId: $collectionId, userEmail: $userEmail, role: $role, canRead: $canRead, canAddFeed: $canAddFeed, canComment: $canComment) {
@@ -259,8 +256,8 @@ const EXPORT_FEEDS = gql`
 `;
 
 const IMPORT_FEEDS = gql`
-  mutation ImportFeeds($collectionId: Int!, $opml: String!) {
-    importFeeds(collectionId: $collectionId, opml: $opml)
+  mutation ImportFeeds($collectionId: Int!, $content: String!, $format: String!) {
+    importFeeds(collectionId: $collectionId, content: $content, format: $format)
   }
 `;
 
@@ -316,7 +313,7 @@ function HomePage({ theme, setTheme }) {
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingMessageContent, setEditingMessageContent] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-
+  const [importFile, setImportFile] = useState(null);
 
   // Queries
   const { data: collectionsData, loading: loadingCols, refetch: refetchCols } = useQuery(GET_COLLECTIONS);
@@ -384,8 +381,11 @@ function HomePage({ theme, setTheme }) {
   });
   const [exportFeeds] = useMutation(EXPORT_FEEDS);
   const [importFeeds] = useMutation(IMPORT_FEEDS, {
-  onCompleted: () => refetchCols(),
-  onError: (err) => alert("Erreur à l'import : " + err.message)
+    onCompleted: () => {
+      refetchCols();
+      alert('Import réussi !');
+    },
+    onError: (err) => alert("Erreur à l'import : " + err.message)
   });
   
 
@@ -393,7 +393,7 @@ function HomePage({ theme, setTheme }) {
   const { data: tagData } = useQuery(GET_TAGS);
   const { data: categoryData } = useQuery(GET_CATEGORIES);
 
-const currentCollection = (collectionsData?.collections || []).find(c => c.id === selectedCollection);
+  const currentCollection = (collectionsData?.collections || []).find(c => c.id === selectedCollection);
   const myMembership = currentCollection?.members?.find(m => m.user.id === meData?.me?.id);
   const myPriv = {
     isOwner: myMembership?.role === 'OWNER',
@@ -456,6 +456,7 @@ const handleAddFeed = () => {
     setCategoryInput('');
     setTags([]);
     setCategories([]);
+    refetchCols();
   }
 };
 
@@ -637,28 +638,47 @@ const handleDeleteMessage = async (id) => {
     URL.revokeObjectURL(url);
   };
 
-  const handleImportOPML = (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
+  const handleImport = (event) => {
+    const file = event.target.files[0];
+    if (!file || !selectedCollection) {
+      alert('Sélectionnez un fichier et une collection.');
+      return;
+    }
 
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const content = e.target.result;
-    try {
-      await importFeeds({
+    const extension = file.name.split('.').pop().toLowerCase();
+    let format;
+    switch (extension) {
+      case 'opml':
+        format = 'opml';
+        break;
+      case 'xml':
+        format = 'xml'; // Traité comme RSS unique
+        break;
+      case 'csv':
+        format = 'csv';
+        break;
+      case 'json':
+        format = 'json';
+        break;
+      default:
+        alert('Format de fichier non supporté. Utilisez .opml, .csv, .json ou .xml.');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target.result;
+      importFeeds({
         variables: {
           collectionId: parseInt(selectedCollection),
-          opml: content
+          content,
+          format
         }
       });
-      alert("Import réussi !");
-    } catch (err) {
-      alert("Erreur : " + err.message);
-    }
+    };
+    reader.onerror = () => alert('Erreur de lecture du fichier.');
+    reader.readAsText(file, 'UTF-8'); // Gère l'encodage UTF-8 par défaut
   };
-  refetchCols();
-  reader.readAsText(file);
-};
 
 
   const handleSearch = () => {
@@ -1245,7 +1265,7 @@ const handleDeleteMessage = async (id) => {
                         value={newFeedUrl}
                         onChange={(e) => setNewFeedUrl(e.target.value)}
                         style={{
-                          width: '95%',
+                          width: '90%',
                           padding: '0.75rem',
                           border: '2px solid #E2E8F0',
                           borderRadius: '12px',
@@ -1335,29 +1355,28 @@ const handleDeleteMessage = async (id) => {
                       >
                         ➕ Ajouter flux
                       </button>
-                      <div style={{ marginTop: '1rem' }}>
-                        <label htmlFor="opmlUpload" style={{
-                          width: '90%',
-                          display: 'inline-block',
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          color: 'white',
-                          padding: '0.75rem 1rem',
-                          borderRadius: '12px',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          boxShadow: '0 4px 12px rgba(102,126,234,0.3)'
-                        }}>
-                          📥 Importer OPML
+                      <div style={{ margin: '1rem 0' }}>
+                          <label htmlFor="import-file" style={{
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            color: 'white',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '15px',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            display: 'inline-block',
+                            boxShadow: '0 4px 15px rgba(102,126,234,0.3)',
+                            transition: 'all 0.3s ease'
+                          }}>
+                            📥 Importer flux
+                          </label>
                           <input
                             type="file"
-                            id="opmlUpload"
-                            accept=".xml,.opml,.json,.csv"
-                            onChange={handleImportOPML}
+                            id="import-file"
+                            accept=".opml,.csv,.json,.xml"
                             style={{ display: 'none' }}
+                            onChange={handleImport}
                           />
-                        </label>
-                      </div>
+                        </div>
                     </div>
                     ) : null}
                     
