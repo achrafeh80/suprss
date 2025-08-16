@@ -30,41 +30,47 @@ const client = new ApolloClient({
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [theme, setTheme] = useState({ darkMode: false, fontSize: 'MEDIUM' });
+  const [authChecked, setAuthChecked] = useState(false); 
 
   useEffect(() => {
-     const storedTheme = localStorage.getItem('theme');           // "dark" | "light"
-     const storedFont = parseInt(localStorage.getItem('fontSize') || '16', 10); // 14 | 16 | 18/20
-     setTheme({
-       darkMode: storedTheme === 'dark',
-       fontSize: storedFont <= 14 ? 'SMALL' : (storedFont >= 20 ? 'LARGE' : 'MEDIUM'),
-     });
-   }, []);
- 
-   useEffect(() => {
-     const onStorage = (e) => {
-       if (e.key === 'theme' || e.key === 'fontSize') {
-         const t = localStorage.getItem('theme');
-         const f = parseInt(localStorage.getItem('fontSize') || '16', 10);
-         setTheme({
-           darkMode: t === 'dark',
-           fontSize: f <= 14 ? 'SMALL' : (f >= 20 ? 'LARGE' : 'MEDIUM'),
-         });
-       }
-     };
-     window.addEventListener('storage', onStorage);
-     return () => window.removeEventListener('storage', onStorage);
-   }, []);
+    const storedTheme = localStorage.getItem('theme');          
+    const storedFont = parseInt(localStorage.getItem('fontSize') || '16', 10); 
+    setTheme({
+      darkMode: storedTheme === 'dark',
+      fontSize: storedFont <= 14 ? 'SMALL' : (storedFont >= 20 ? 'LARGE' : 'MEDIUM'),
+    });
+  }, []);
 
   useEffect(() => {
-    const hash = window.location.hash;
+    const onStorage = (e) => {
+      if (e.key === 'theme' || e.key === 'fontSize') {
+        const t = localStorage.getItem('theme');
+        const f = parseInt(localStorage.getItem('fontSize') || '16', 10);
+        setTheme({
+          darkMode: t === 'dark',
+          fontSize: f <= 14 ? 'SMALL' : (f >= 20 ? 'LARGE' : 'MEDIUM'),
+        });
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  
+  useEffect(() => {
+    const hash = window.location.hash || '';
     if (hash.includes('token=')) {
-      const newToken = hash.split('token=')[1];
+      
+      const params = new URLSearchParams(hash.replace('#', '?'));
+      const newToken = params.get('token');
       if (newToken) {
         localStorage.setItem('token', newToken);
         setToken(newToken);
       }
+      
       window.history.replaceState(null, '', window.location.pathname);
     }
+    setAuthChecked(true);
   }, []);
 
   useEffect(() => {
@@ -90,40 +96,49 @@ function App() {
     );
   }, [theme]);
 
-
   useEffect(() => {
-  if (token) {
-    client.resetStore().catch(() => client.clearStore());
-  } else {
-    client.clearStore();
-  }
-}, [token]);
-
-  
+    if (token) {
+      client.resetStore().catch(() => client.clearStore());
+    } else {
+      client.clearStore();
+    }
+  }, [token]);
 
   return (
     <ApolloProvider client={client}>
       <Router>
-        <Routes>
-          {!token ? (
-            <>
-              {/* Routes publiques */}
-              <Route path="/login" element={<LoginPage onLoginSuccess={(tok) => setToken(tok)} />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </>
-          ) : (
-            <>
-              {/* Routes privées */}
-              <Route path="/" element={<HomePage theme={theme} setTheme={setTheme} />} />
-              <Route path="/settings" element={<SettingsPage theme={theme} setTheme={setTheme} onLogout={() => { localStorage.removeItem('token'); setToken(null); }} />} />
-              {/* Ces routes ne doivent pas être accessibles si connecté */}
-              <Route path="/login" element={<Navigate to="/" replace />} />
-              <Route path="/register" element={<Navigate to="/" replace />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </>
-          )}
-        </Routes>
+        
+        {authChecked && (
+          <Routes>
+            {!token ? (
+              <>
+               
+                <Route path="/login" element={<LoginPage onLoginSuccess={(tok) => setToken(tok)} />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="*" element={<Navigate to="/login" replace />} />
+              </>
+            ) : (
+              <>
+                
+                <Route path="/" element={<HomePage theme={theme} setTheme={setTheme} />} />
+                <Route
+                  path="/settings"
+                  element={
+                    <SettingsPage
+                      theme={theme}
+                      setTheme={setTheme}
+                      onLogout={() => { localStorage.removeItem('token'); setToken(null); }}
+                    />
+                  }
+                />
+                
+                <Route path="/login" element={<Navigate to="/" replace />} />
+                <Route path="/register" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </>
+            )}
+          </Routes>
+        )}
       </Router>
     </ApolloProvider>
   );

@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { useMutation, gql } from '@apollo/client';
 import { Link, useNavigate } from 'react-router-dom';
 
+const API_BASE =
+  (process.env.REACT_APP_API_URL
+    ? process.env.REACT_APP_API_URL.replace('/graphql', '')
+    : 'http://localhost:4000');
+
 const LOGIN_MUTATION = gql`
   mutation Login($email: String!, $password: String!) {
     login(email: $email, password: $password) {
@@ -164,27 +169,28 @@ function LoginPage({ onLoginSuccess }) {
           </button>
         </form>
 
-        <p style={{
-          textAlign: 'center',
-          marginBottom: '16px',
-          color: '#666',
-          fontSize: '14px'
-        }}>
-          Ou{" "}
+        <p style={{ textAlign:'center', marginBottom:'16px', color:'#666', fontSize:'14px' }}>
+          Ou Se connecter avec {' '}
           <a
-            href={`${process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/graphql', '') : ''}/auth/google`}
-            style={{
-              color: '#667eea',
-              textDecoration: 'none',
-              fontWeight: '600'
-            }}
-            onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
-            onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+            href={`${API_BASE}/auth/google`}
+            style={{ color:'#667eea', textDecoration:'none', fontWeight:600, marginRight:12 }}
+            onMouseOver={(e) => e.currentTarget.style.textDecoration = 'underline'}
+            onMouseOut={(e) => e.currentTarget.style.textDecoration = 'none'}
+            aria-label="Connexion avec Google"
           >
-            Connectez-vous avec Google
+            Google
+          </a>
+          <a
+            href={`${API_BASE}/auth/github`}
+            style={{ color:'#667eea', textDecoration:'none', fontWeight:600, marginRight:12 }}
+            onMouseOver={(e) => e.currentTarget.style.textDecoration = 'underline'}
+            onMouseOut={(e) => e.currentTarget.style.textDecoration = 'none'}
+            aria-label="Connexion avec GitHub"
+          >
+            GitHub
           </a>
         </p>
-        
+
         <p style={{
           textAlign: 'center',
           color: '#666',
