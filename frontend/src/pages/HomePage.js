@@ -250,8 +250,8 @@ const REMOVE_MEMBER = gql`
 `;
 
 const EXPORT_FEEDS = gql`
-  mutation ExportFeeds($format: String!) {
-    exportFeeds(format: $format)
+  mutation ExportFeeds($collectionId: ID,$format: String!) {
+    exportFeeds(collectionId: $collectionId,format: $format)
   }
 `;
 
@@ -314,6 +314,8 @@ function HomePage({ theme, setTheme }) {
   const [editingMessageContent, setEditingMessageContent] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [importFile, setImportFile] = useState(null);
+  const [exportFormat, setExportFormat] = useState('opml');
+
 
   // Queries
   const { data: collectionsData, loading: loadingCols, refetch: refetchCols } = useQuery(GET_COLLECTIONS);
@@ -628,12 +630,16 @@ const handleDeleteMessage = async (id) => {
   };
 
   const handleExport = async (format) => {
-    const { data } = await exportFeeds({ variables: { format } });
+    if (!selectedCollection) {
+    alert("Sélectionnez une collection à exporter.");
+    return;
+  }
+    const { data } = await exportFeeds({ variables: { collectionId: selectedCollection,format } });
     const blob = new Blob([data.exportFeeds], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `feeds.${format}`;
+    a.download = `collection-${selectedCollection}-feeds.${format}`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -1258,6 +1264,15 @@ const handleDeleteMessage = async (id) => {
                     ))}
                   </ul>
 
+                    <h4 style={{
+                      color: '#2D3748',
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      marginBottom: '1rem',
+                      display: 'block',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>🌐 Ajout de Flux</h4>
                     {myPriv.canAddFeed ? (
                     <div style={{ marginBottom: '2rem' }}>
                       <input
@@ -1357,6 +1372,7 @@ const handleDeleteMessage = async (id) => {
                       </button>
                       <div style={{ margin: '1rem 0' }}>
                           <label htmlFor="import-file" style={{
+                            width: '85%',
                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                             color: 'white',
                             padding: '0.75rem 1.5rem',
@@ -1399,7 +1415,7 @@ const handleDeleteMessage = async (id) => {
                           key={m.user.id} 
                           style={{
                             display: 'flex',
-                            flexDirection: 'column',           // ⬅️ colonne pour empiler "row" + "editor"
+                            flexDirection: 'column',          
                             alignItems: 'stretch',
                             padding: '0.85rem 1rem',
                             background: 'rgba(255, 255, 255, 0.85)',
@@ -1704,89 +1720,82 @@ const handleDeleteMessage = async (id) => {
                         fontSize: '14px',
                         fontWeight: '600',
                         transition: 'all 0.3s ease',
-                        boxShadow: '0 4px 12px rgba(56,161,105,0.3)'
+                        boxShadow: '0 4px 12px rgba(56,161,105,0.3)',
+                        marginBottom: '1rem'
                       }}
                     >
                       📤 Envoyer
                     </button>
+                    {/* Export de la collection sélectionnée */}
+                    <div style={{ 
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: '0.8rem',
+                      marginBottom: '1.5rem'
+                    }}>
+                      <h3 style={{
+                        color: '#2D3748',
+                        fontSize: '18px',
+                        fontWeight: '700',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        margin: 0
+                      }}>📥 Export Feeds</h3>
+
+                      <div style={{ 
+                        display: 'flex', 
+                        gap: '0.8rem', 
+                        alignItems: 'center' 
+                      }}>
+                        <select
+                          value={exportFormat || 'opml'}
+                          onChange={(e) => setExportFormat(e.target.value)}
+                          style={{
+                            flex: '0 0 170px',
+                            padding: '0.6rem 0.9rem',
+                            border: '1px solid #CBD5E0',
+                            borderRadius: '8px',
+                            background: 'white',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: '#2D3748',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <option value="opml">OPML</option>
+                          <option value="json">JSON</option>
+                          <option value="csv">CSV</option>
+                        </select>
+
+                        <button
+                          onClick={() => handleExport(exportFormat || 'opml')}
+                          style={{
+                            background: 'linear-gradient(135deg, #ED8936 0%, #DD6B20 100%)',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '0.65rem 1.1rem',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                            transition: 'all 0.2s ease-in-out'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          ⬇️ Télécharger
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </li>
             ))}
           </ul>
 
-          <div style={{
-            marginTop: '2rem',
-            padding: '1.5rem',
-            background: 'rgba(247,250,252,0.9)',
-            borderRadius: '20px',
-            border: '2px solid rgba(226,232,240,0.4)',
-            backdropFilter: 'blur(10px)',
-            boxShadow: '0 6px 20px rgba(0,0,0,0.08)'
-          }}>
-            <h3 style={{
-              color: '#2D3748',
-              fontSize: '16px',
-              fontWeight: '700',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>📥 Export Feeds</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <button 
-                onClick={() => handleExport("opml")}
-                style={{
-                  background: 'linear-gradient(135deg, #ED8936 0%, #DD6B20 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.75rem',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 12px rgba(237,137,54,0.3)'
-                }}
-              >
-                📄 Export OPML
-              </button>
-              <button 
-                onClick={() => handleExport("json")}
-                style={{
-                  background: 'linear-gradient(135deg, #38A169 0%, #2F855A 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.75rem',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 12px rgba(56,161,105,0.3)'
-                }}
-              >
-                📋 Export JSON
-              </button>
-              <button 
-                onClick={() => handleExport("csv")}
-                style={{
-                  background: 'linear-gradient(135deg, #3182CE 0%, #2C5282 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.75rem',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 12px rgba(49,130,206,0.3)'
-                }}
-              >
-                📊 Export CSV
-              </button>
-            </div>
-          </div>
         </aside>
 
         {/* ARTICLES */}

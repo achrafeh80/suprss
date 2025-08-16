@@ -136,7 +136,7 @@ const typeDefs = gql`
     updateMember(collectionId: ID!, userId: ID!, canRead: Boolean!, canAddFeed: Boolean!, canComment: Boolean!): CollectionMember!
 
     importFeeds(collectionId: Int!, content: String!, format: String!): Boolean!
-    exportFeeds(format: String!): String!
+    exportFeeds(collectionId: ID,format: String!): String!
 
     changePassword(oldPassword: String!, newPassword: String!): Boolean
     deleteAccount: Boolean

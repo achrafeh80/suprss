@@ -39,4 +39,4 @@ Une fois le fichier .env en place, lancez les services avec Docker :
 docker-compose up --build
 ```
 
-Après chaque relance avec **--build**, n’oubliez pas de supprimer le token.
+Après chaque relance avec **`--build`**, n’oubliez pas de supprimer le token.

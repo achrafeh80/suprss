@@ -1192,7 +1192,7 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
             }
           });
 
-          console.log(`✅ Feed ajouté : ${feed.title}`);
+          console.log(`Feed ajouté : ${feed.title}`);
         }
 
         return true;
@@ -1202,41 +1202,118 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
       }
     },
 
-    exportFeeds: async (parent, { format }, { prisma, user }) => {
-      if (!user) throw new Error("Authentification requise.");
-      const memberships = await prisma.collectionMembership.findMany({
-        where: { userId: user.id },
-        include: { collection: { include: { collectionFeeds: { include: { feed: true } } } } }
-      });
-      // Rassemble tous les feeds distincts de l'utilisateur
-      const allFeeds = {};
-      for (let m of memberships) {
-        for (let cf of m.collection.collectionFeeds) {
-          allFeeds[cf.feedId] = cf.feed;
-        }
+    exportFeeds: async (_parent, { collectionId, format }, { prisma, user }) => {
+      if (!user) {
+        throw new Error("Authentification requise.");
       }
-      const feeds = Object.values(allFeeds);
-      format = format.toLowerCase();
-      if (format === 'opml') {
-        // Génère un OPML avec les feeds
+
+      // 1) Normalisation / validation du format
+      const allowed = new Set(["opml", "json", "csv"]);
+      const fmt = (format || "opml").toString().trim().toLowerCase();
+      if (!allowed.has(fmt)) {
+        throw new Error("Format non supporté. Utilisez 'opml', 'json' ou 'csv'.");
+      }
+
+      // 2) Récupération des feeds selon contexte (collection ciblée ou fallback 'toutes')
+      let feeds = [];
+
+      // Helper: déduplique par feed.id
+      const toUnique = (arr) => {
+        const map = new Map();
+        for (const f of arr) {
+          if (!map.has(f.id)) map.set(f.id, f);
+        }
+        return Array.from(map.values());
+      };
+
+      if (collectionId != null) {
+        // Filtrage par collection sélectionnée + contrôle d'accès
+        const colId = Number(collectionId);
+        if (Number.isNaN(colId)) {
+          throw new Error("Identifiant de collection invalide.");
+        }
+
+        const membership = await prisma.collectionMembership.findFirst({
+          where: { userId: user.id, collectionId: colId },
+        });
+        if (!membership) {
+          throw new Error("Accès refusé à cette collection.");
+        }
+
+        const cfs = await prisma.collectionFeed.findMany({
+          where: { collectionId: colId },
+          include: { feed: true },
+        });
+        feeds = cfs.map((cf) => cf.feed);
+      } else {
+        // Comportement historique: toutes les collections auxquelles l'user appartient
+        const memberships = await prisma.collectionMembership.findMany({
+          where: { userId: user.id },
+          include: {
+            collection: {
+              include: {
+                collectionFeeds: { include: { feed: true } },
+              },
+            },
+          },
+        });
+
+        const acc = [];
+        for (const m of memberships) {
+          for (const cf of m.collection.collectionFeeds) {
+            acc.push(cf.feed);
+          }
+        }
+        feeds = toUnique(acc);
+      }
+
+      // 3) Sérialisation par format
+      if (fmt === "opml") {
+        // OPML simple (subscriptions)
         let opml = `<?xml version="1.0" encoding="UTF-8"?>\n<opml version="2.0">\n<head>\n<title>Subscriptions</title>\n</head>\n<body>\n`;
-        for (let feed of feeds) {
-          opml += `<outline text="${feed.title}" type="rss" xmlUrl="${feed.url}" htmlUrl="" />\n`;
+        for (const f of feeds) {
+          // Sécurise les champs
+          const title = (f.title || "").toString().replace(/"/g, "&quot;").replace(/&/g, "&amp;").replace(/</g, "&lt;");
+          const url = (f.url || "").toString().replace(/"/g, "&quot;").replace(/&/g, "&amp;").replace(/</g, "&lt;");
+          opml += `<outline text="${title}" type="rss" xmlUrl="${url}" />\n`;
         }
         opml += `</body>\n</opml>`;
         return opml;
-      } else if (format === 'json') {
-        return JSON.stringify(feeds.map(f => ({ title: f.title, url: f.url, tags: f.tags })), null, 2);
-      } else if (format === 'csv') {
-        let csv = "Title,URL,Tags\n";
-        for (let f of feeds) {
-          csv += `"${f.title.replace(/"/g, '""')}",${f.url},"${(f.tags || []).join(',')}"\n`;
-        }
-        return csv;
-      } else {
-        throw new Error("Format non supporté. Utilisez 'opml', 'json' ou 'csv'.");
       }
+
+      if (fmt === "json") {
+        // JSON minimal et propre
+        const payload = feeds.map((f) => ({
+          id: f.id,
+          title: f.title || "",
+          url: f.url || "",
+          tags: Array.isArray(f.tags)
+            ? f.tags
+            : (typeof f.tags === "string" && f.tags.length ? [f.tags] : []),
+        }));
+        return JSON.stringify(payload, null, 2);
+      }
+
+      // CSV
+      const csvEscape = (val) => {
+        const s = (val ?? "").toString();
+        // Échappe guillemets et force l'encadrement
+        return `"${s.replace(/"/g, '""')}"`;
+      };
+
+      let csv = "Title,URL,Tags\r\n";
+      for (const f of feeds) {
+        const title = csvEscape(f.title || "");
+        const url = csvEscape(f.url || "");
+        const tagsArr = Array.isArray(f.tags)
+          ? f.tags
+          : (typeof f.tags === "string" && f.tags.length ? [f.tags] : []);
+        const tags = csvEscape(tagsArr.join(","));
+        csv += `${title},${url},${tags}\r\n`;
+      }
+      return csv;
     }
+
   }
 };
 
