@@ -500,10 +500,15 @@ const handleUpdateFeed = (feedId) => {
 
 
   const handleRemoveFeed = (feedId) => {
+    if (!(myPriv.isOwner || myPriv.canAddFeed)) {
+      alert("Vous n'avez pas le privilège pour retirer un flux de cette collection.");
+      return;
+    }
     if (selectedCollection) {
       removeFeed({ variables: { collectionId: selectedCollection, feedId } });
     }
   };
+
 
   const handleAddComment = (articleId) => {
     if (newComment.trim()) {
@@ -1150,36 +1155,47 @@ const handleDeleteMessage = async (id) => {
                               ))}
                             </div>
                           </button>
-                          <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
-                            <button onClick={() => {
-                              setEditingFeedId(feed.id);
-                              setEditTitle(feed.title);
-                              setEditTags(feed.tags?.join(', ') || '');
-                              setEditCategories(feed.categories?.join(', ') || '');
-                            }} style={{
-                              background: 'rgba(72,187,120,0.15)',
-                              border: '1px solid rgba(72,187,120,0.2)',
-                              borderRadius: '8px',
-                              padding: '0.5rem',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease'
-                            }}>✏️</button>
-                            <button 
-                              onClick={() => handleRemoveFeed(feed.id)}
-                              style={{
-                                background: 'rgba(239,68,68,0.15)',
-                                border: '1px solid rgba(239,68,68,0.2)',
-                                borderRadius: '8px',
-                                padding: '0.5rem',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                              }}
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </div>
+                          {(myPriv.isOwner || myPriv.canAddFeed) && (
+                            <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                              <button
+                                onClick={() => {
+                                  // Double check runtime
+                                  if (!(myPriv.isOwner || myPriv.canAddFeed)) return;
+                                  setEditingFeedId(feed.id);
+                                  setEditTitle(feed.title);
+                                  setEditTags(feed.tags?.join(', ') || '');
+                                  setEditCategories(feed.categories?.join(', ') || '');
+                                }}
+                                style={{
+                                  background: 'rgba(72,187,120,0.15)',
+                                  border: '1px solid rgba(72,187,120,0.2)',
+                                  borderRadius: '8px',
+                                  padding: '0.5rem',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                title="Éditer le flux"
+                              >
+                                ✏️
+                              </button>
 
+                              <button
+                                onClick={() => handleRemoveFeed(feed.id)}
+                                style={{
+                                  background: 'rgba(239,68,68,0.15)',
+                                  border: '1px solid rgba(239,68,68,0.2)',
+                                  borderRadius: '8px',
+                                  padding: '0.5rem',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                title="Retirer le flux de la collection"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          )}
+                        </div>
                         {/* Formulaire sous le contenu */}
                         {editingFeedId === feed.id && (
                           <div style={{ borderTop: '1px solid rgba(226,232,240,0.6)', padding: '1.5rem', borderRadius: '0 0 18px 18px' }}>

@@ -603,7 +603,7 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }
     const collection = cf.collection;
     const isOwner = collection.ownerId === user.id;
     const isMemberWithWrite = collection.memberships.some(
-      m => m.userId === user.id && m.role === 'OWNER'
+      m => m.userId === user.id && (m.role === 'OWNER' || m.canAddFeed)
     );
     return isOwner || isMemberWithWrite;
   });
@@ -634,8 +634,8 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }
       });
       if (!membership) throw new Error("Accès refusé.");
       // Si user n'est pas owner, on pourrait refuser la suppression, mais on accepte pour owner.
-      if (membership.role !== 'OWNER') {
-        // On peut limiter ici, mais pas demandé explicitement.
+      if (membership.role !== 'OWNER' && !membership.canAddFeed) {
+        throw new Error("Privilège requis : suppression de flux.");
       }
       // Supprime le lien feed-collection
       await prisma.collectionFeed.delete({
