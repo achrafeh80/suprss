@@ -790,7 +790,7 @@ const handleDeleteMessage = async (id) => {
       }}>
         <h1 style={{
           margin: 0,
-          fontSize: '5rem',
+          fontSize: '8rem',
           fontWeight: '800',
           letterSpacing: '0.1em',
           textShadow: '0 2px 4px rgba(0,0,0,0.1)',
@@ -834,7 +834,7 @@ const handleDeleteMessage = async (id) => {
 
       <div className="main-section" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* SIDEBAR */}
-        <aside className="sidebar" style={{ width: '380px', padding: '2rem', overflowY: 'auto' }}>
+        <aside className="sidebar" style={{ width: '500px', padding: '2rem', overflowY: 'auto' }}>
           <h2 style={{
             color: '#2D3748',
             fontSize: '1.5rem',
@@ -853,7 +853,7 @@ const handleDeleteMessage = async (id) => {
               value={newCollectionName}
               onChange={(e) => setNewCollectionName(e.target.value)}
               style={{
-                width: '90%',
+                width: '93%',
                 padding: '1rem',
                 border: '2px solid #E2E8F0',
                 borderRadius: '15px',
@@ -1375,102 +1375,147 @@ const handleDeleteMessage = async (id) => {
                           }}>
                             {/* Tags Section */}
                             <div style={{
-                              background: 'white',
-                              borderRadius: '15px',
-                              padding: '1.5rem',
-                              border: '1px solid rgba(226,232,240,0.5)',
-                              boxShadow: '0 5px 15px rgba(0,0,0,0.05)'
+                              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                              borderRadius: '16px',
+                              padding: '1.75rem',
+                              border: '1px solid rgba(226,232,240,0.3)',
+                              boxShadow: '0 8px 25px rgba(102,126,234,0.08), 0 3px 10px rgba(0,0,0,0.02)',
+                              position: 'relative',
+                              overflow: 'visible'
                             }}>
                               <label style={{
                                 display: 'block',
                                 fontSize: '14px',
-                                fontWeight: '600',
-                                color: '#4A5568',
-                                marginBottom: '0.75rem',
-                                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                fontWeight: '700',
+                                color: '#2D3748',
+                                marginBottom: '1rem',
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                                 WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent'
+                                WebkitTextFillColor: 'transparent',
+                                letterSpacing: '0.025em'
                               }}>🏷️ Tags</label>
-                              <input 
-                                value={tagInput} 
-                                onChange={e => setTagInput(e.target.value)} 
-                                placeholder="Rechercher ou créer un tag..."
-                                style={{
-                                  width: '100%',
-                                  padding: '0.75rem',
-                                  border: '2px solid #E2E8F0',
-                                  borderRadius: '10px',
-                                  fontSize: '14px',
-                                  marginBottom: '0.75rem',
-                                  background: 'rgba(248,250,252,0.8)',
-                                  outline: 'none',
-                                  transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                  e.target.style.borderColor = '#667eea';
-                                  e.target.style.background = 'white';
-                                }}
-                                onBlur={(e) => {
-                                  e.target.style.borderColor = '#E2E8F0';
-                                  e.target.style.background = 'rgba(248,250,252,0.8)';
-                                }}
-                              />
-                              {tagInput && (
-                                <div style={{ 
-                                  maxHeight: '120px', 
-                                  overflowY: 'auto', 
-                                  background: 'rgba(248,250,252,0.9)', 
-                                  borderRadius: '10px', 
-                                  border: '1px solid rgba(226,232,240,0.5)',
-                                  marginBottom: '0.75rem'
-                                }}>
-                                  {tagData?.allTags?.filter(t => t.toLowerCase().includes(tagInput.toLowerCase())).map(t => 
-                                    <div key={t} onClick={() => addTag(t)} style={{ 
-                                      padding: '0.75rem', 
-                                      cursor: 'pointer', 
-                                      borderRadius: '8px',
-                                      margin: '0.25rem',
-                                      transition: 'all 0.2s ease',
-                                      fontSize: '14px'
-                                    }} 
-                                    onMouseOver={(e) => {
-                                      e.target.style.background = 'rgba(102,126,234,0.1)';
-                                      e.target.style.color = '#667eea';
-                                    }}
-                                    onMouseOut={(e) => {
-                                      e.target.style.background = 'transparent';
-                                      e.target.style.color = 'inherit';
-                                    }}>
-                                      #{t}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                              
+                              <div style={{ position: 'relative' }}>
+                                <input 
+                                  value={tagInput} 
+                                  onChange={e => setTagInput(e.target.value)} 
+                                  placeholder="Rechercher ou créer un tag..."
+                                  style={{
+                                    width: '80%',
+                                    padding: '0.875rem 1rem',
+                                    border: '2px solid #E2E8F0',
+                                    borderRadius: '12px',
+                                    fontSize: '14px',
+                                    marginBottom: '0.75rem',
+                                    background: 'rgba(248,250,252,0.7)',
+                                    outline: 'none',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                                  }}
+                                  onFocus={(e) => {
+                                    e.target.style.borderColor = '#667eea';
+                                    e.target.style.background = 'white';
+                                    e.target.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.1), 0 4px 12px rgba(102,126,234,0.15)';
+                                  }}
+                                  onBlur={(e) => {
+                                    e.target.style.borderColor = '#E2E8F0';
+                                    e.target.style.background = 'rgba(248,250,252,0.7)';
+                                    e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.02)';
+                                  }}
+                                />
+                                
+                                {tagInput && (
+                                  <div style={{ 
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: '0',
+                                    right: '0',
+                                    maxHeight: '200px', 
+                                    overflowY: 'auto',
+                                    background: 'white',
+                                    borderRadius: '12px',
+                                    border: '1px solid rgba(226,232,240,0.4)',
+                                    marginTop: '-0.75rem',
+                                    zIndex: 1000,
+                                    boxShadow: '0 10px 40px rgba(102,126,234,0.15), 0 4px 12px rgba(0,0,0,0.1)',
+                                    backdropFilter: 'blur(8px)'
+                                  }}>
+                                    {tagData?.allTags?.filter(t => t.toLowerCase().includes(tagInput.toLowerCase())).map(t => 
+                                      <div key={t} onClick={() => addTag(t)} style={{ 
+                                        padding: '0.875rem 1rem', 
+                                        cursor: 'pointer', 
+                                        borderRadius: '8px',
+                                        margin: '0.25rem',
+                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        fontSize: '14px',
+                                        fontWeight: '500'
+                                      }} 
+                                      onMouseOver={(e) => {
+                                        e.target.style.background = 'linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.05) 100%)';
+                                        e.target.style.color = '#667eea';
+                                        e.target.style.transform = 'translateX(4px)';
+                                      }}
+                                      onMouseOut={(e) => {
+                                        e.target.style.background = 'transparent';
+                                        e.target.style.color = 'inherit';
+                                        e.target.style.transform = 'translateX(0)';
+                                      }}>
+                                        #{t}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.625rem', marginTop: tagInput ? '1rem' : '0' }}>
                                 {tags.map(t => 
                                   <span key={t} style={{
-                                    background: 'linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)',
+                                    background: 'linear-gradient(135deg, rgba(102,126,234,0.12) 0%, rgba(118,75,162,0.08) 100%)',
                                     color: '#667eea',
-                                    padding: '0.4rem 0.8rem',
-                                    borderRadius: '20px',
+                                    padding: '0.5rem 0.875rem',
+                                    borderRadius: '25px',
                                     fontSize: '12px',
                                     fontWeight: '600',
-                                    border: '1px solid rgba(102,126,234,0.2)',
+                                    border: '1px solid rgba(102,126,234,0.15)',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '0.25rem'
+                                    gap: '0.375rem',
+                                    transition: 'all 0.2s ease',
+                                    cursor: 'default'
+                                  }}
+                                  onMouseOver={(e) => {
+                                    e.target.style.transform = 'translateY(-1px)';
+                                    e.target.style.boxShadow = '0 4px 12px rgba(102,126,234,0.2)';
+                                  }}
+                                  onMouseOut={(e) => {
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = 'none';
                                   }}>
                                     #{t}
                                     <button
                                       onClick={() => setTags(tags.filter(tag => tag !== t))}
                                       style={{
-                                        background: 'none',
+                                        background: 'rgba(102,126,234,0.15)',
                                         border: 'none',
                                         color: '#667eea',
                                         cursor: 'pointer',
-                                        fontSize: '12px',
-                                        padding: '0',
-                                        marginLeft: '0.25rem'
+                                        fontSize: '14px',
+                                        padding: '2px 6px',
+                                        borderRadius: '50%',
+                                        width: '18px',
+                                        height: '18px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        transition: 'all 0.2s ease'
+                                      }}
+                                      onMouseOver={(e) => {
+                                        e.target.style.background = 'rgba(102,126,234,0.25)';
+                                        e.target.style.transform = 'scale(1.1)';
+                                      }}
+                                      onMouseOut={(e) => {
+                                        e.target.style.background = 'rgba(102,126,234,0.15)';
+                                        e.target.style.transform = 'scale(1)';
                                       }}
                                     >×</button>
                                   </span>
@@ -1480,102 +1525,147 @@ const handleDeleteMessage = async (id) => {
 
                             {/* Categories Section */}
                             <div style={{
-                              background: 'white',
-                              borderRadius: '15px',
-                              padding: '1.5rem',
-                              border: '1px solid rgba(226,232,240,0.5)',
-                              boxShadow: '0 5px 15px rgba(0,0,0,0.05)'
+                              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                              borderRadius: '16px',
+                              padding: '1.75rem',
+                              border: '1px solid rgba(226,232,240,0.3)',
+                              boxShadow: '0 8px 25px rgba(72,187,120,0.08), 0 3px 10px rgba(0,0,0,0.02)',
+                              position: 'relative',
+                              overflow: 'visible'
                             }}>
                               <label style={{
                                 display: 'block',
                                 fontSize: '14px',
-                                fontWeight: '600',
-                                color: '#4A5568',
-                                marginBottom: '0.75rem',
-                                background: 'linear-gradient(135deg, #48BB78, #38A169)',
+                                fontWeight: '700',
+                                color: '#2D3748',
+                                marginBottom: '1rem',
+                                background: 'linear-gradient(135deg, #48BB78 0%, #38A169 100%)',
                                 WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent'
+                                WebkitTextFillColor: 'transparent',
+                                letterSpacing: '0.025em'
                               }}>📂 Catégories</label>
-                              <input 
-                                value={categoryInput} 
-                                onChange={e => setCategoryInput(e.target.value)} 
-                                placeholder="Rechercher ou créer une catégorie..."
-                                style={{
-                                  width: '100%',
-                                  padding: '0.75rem',
-                                  border: '2px solid #E2E8F0',
-                                  borderRadius: '10px',
-                                  fontSize: '14px',
-                                  marginBottom: '0.75rem',
-                                  background: 'rgba(248,250,252,0.8)',
-                                  outline: 'none',
-                                  transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                  e.target.style.borderColor = '#48BB78';
-                                  e.target.style.background = 'white';
-                                }}
-                                onBlur={(e) => {
-                                  e.target.style.borderColor = '#E2E8F0';
-                                  e.target.style.background = 'rgba(248,250,252,0.8)';
-                                }}
-                              />
-                              {categoryInput && (
-                                <div style={{ 
-                                  maxHeight: '120px', 
-                                  overflowY: 'auto', 
-                                  background: 'rgba(248,250,252,0.9)', 
-                                  borderRadius: '10px', 
-                                  border: '1px solid rgba(226,232,240,0.5)',
-                                  marginBottom: '0.75rem'
-                                }}>
-                                  {categoryData?.allCategories?.filter(c => c.toLowerCase().includes(categoryInput.toLowerCase())).map(c => 
-                                    <div key={c} onClick={() => addCategory(c)} style={{ 
-                                      padding: '0.75rem', 
-                                      cursor: 'pointer', 
-                                      borderRadius: '8px',
-                                      margin: '0.25rem',
-                                      transition: 'all 0.2s ease',
-                                      fontSize: '14px'
-                                    }} 
-                                    onMouseOver={(e) => {
-                                      e.target.style.background = 'rgba(72,187,120,0.1)';
-                                      e.target.style.color = '#48BB78';
-                                    }}
-                                    onMouseOut={(e) => {
-                                      e.target.style.background = 'transparent';
-                                      e.target.style.color = 'inherit';
-                                    }}>
-                                      [{c}]
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                              
+                              <div style={{ position: 'relative' }}>
+                                <input 
+                                  value={categoryInput} 
+                                  onChange={e => setCategoryInput(e.target.value)} 
+                                  placeholder="Rechercher ou créer une catégorie..."
+                                  style={{
+                                    width: '80%',
+                                    padding: '0.875rem 1rem',
+                                    border: '2px solid #E2E8F0',
+                                    borderRadius: '12px',
+                                    fontSize: '14px',
+                                    marginBottom: '0.75rem',
+                                    background: 'rgba(248,250,252,0.7)',
+                                    outline: 'none',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                                  }}
+                                  onFocus={(e) => {
+                                    e.target.style.borderColor = '#48BB78';
+                                    e.target.style.background = 'white';
+                                    e.target.style.boxShadow = '0 0 0 3px rgba(72,187,120,0.1), 0 4px 12px rgba(72,187,120,0.15)';
+                                  }}
+                                  onBlur={(e) => {
+                                    e.target.style.borderColor = '#E2E8F0';
+                                    e.target.style.background = 'rgba(248,250,252,0.7)';
+                                    e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.02)';
+                                  }}
+                                />
+                                
+                                {categoryInput && (
+                                  <div style={{ 
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: '0',
+                                    right: '0',
+                                    maxHeight: '200px', 
+                                    overflowY: 'auto',
+                                    background: 'white',
+                                    borderRadius: '12px',
+                                    border: '1px solid rgba(226,232,240,0.4)',
+                                    marginTop: '-0.75rem',
+                                    zIndex: 1000,
+                                    boxShadow: '0 10px 40px rgba(72,187,120,0.15), 0 4px 12px rgba(0,0,0,0.1)',
+                                    backdropFilter: 'blur(8px)'
+                                  }}>
+                                    {categoryData?.allCategories?.filter(c => c.toLowerCase().includes(categoryInput.toLowerCase())).map(c => 
+                                      <div key={c} onClick={() => addCategory(c)} style={{ 
+                                        padding: '0.875rem 1rem', 
+                                        cursor: 'pointer', 
+                                        borderRadius: '8px',
+                                        margin: '0.25rem',
+                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        fontSize: '14px',
+                                        fontWeight: '500'
+                                      }} 
+                                      onMouseOver={(e) => {
+                                        e.target.style.background = 'linear-gradient(135deg, rgba(72,187,120,0.08) 0%, rgba(56,161,105,0.05) 100%)';
+                                        e.target.style.color = '#48BB78';
+                                        e.target.style.transform = 'translateX(4px)';
+                                      }}
+                                      onMouseOut={(e) => {
+                                        e.target.style.background = 'transparent';
+                                        e.target.style.color = 'inherit';
+                                        e.target.style.transform = 'translateX(0)';
+                                      }}>
+                                        [{c}]
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.625rem', marginTop: categoryInput ? '1rem' : '0' }}>
                                 {categories.map(c => 
                                   <span key={c} style={{
-                                    background: 'linear-gradient(135deg, rgba(72,187,120,0.15) 0%, rgba(56,161,105,0.15) 100%)',
+                                    background: 'linear-gradient(135deg, rgba(72,187,120,0.12) 0%, rgba(56,161,105,0.08) 100%)',
                                     color: '#48BB78',
-                                    padding: '0.4rem 0.8rem',
-                                    borderRadius: '20px',
+                                    padding: '0.5rem 0.875rem',
+                                    borderRadius: '25px',
                                     fontSize: '12px',
                                     fontWeight: '600',
-                                    border: '1px solid rgba(72,187,120,0.2)',
+                                    border: '1px solid rgba(72,187,120,0.15)',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '0.25rem'
+                                    gap: '0.375rem',
+                                    transition: 'all 0.2s ease',
+                                    cursor: 'default'
+                                  }}
+                                  onMouseOver={(e) => {
+                                    e.target.style.transform = 'translateY(-1px)';
+                                    e.target.style.boxShadow = '0 4px 12px rgba(72,187,120,0.2)';
+                                  }}
+                                  onMouseOut={(e) => {
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = 'none';
                                   }}>
                                     [{c}]
                                     <button
                                       onClick={() => setCategories(categories.filter(cat => cat !== c))}
                                       style={{
-                                        background: 'none',
+                                        background: 'rgba(72,187,120,0.15)',
                                         border: 'none',
                                         color: '#48BB78',
                                         cursor: 'pointer',
-                                        fontSize: '12px',
-                                        padding: '0',
-                                        marginLeft: '0.25rem'
+                                        fontSize: '14px',
+                                        padding: '2px 6px',
+                                        borderRadius: '50%',
+                                        width: '18px',
+                                        height: '18px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        transition: 'all 0.2s ease'
+                                      }}
+                                      onMouseOver={(e) => {
+                                        e.target.style.background = 'rgba(72,187,120,0.25)';
+                                        e.target.style.transform = 'scale(1.1)';
+                                      }}
+                                      onMouseOut={(e) => {
+                                        e.target.style.background = 'rgba(72,187,120,0.15)';
+                                        e.target.style.transform = 'scale(1)';
                                       }}
                                     >×</button>
                                   </span>
@@ -1924,7 +2014,7 @@ const handleDeleteMessage = async (id) => {
                               value={newMemberEmail}
                               onChange={(e) => setNewMemberEmail(e.target.value)}
                               style={{
-                                width: '81%',
+                                width: '88%',
                                 padding: '1rem',
                                 border: '2px solid #E2E8F0',
                                 borderRadius: '12px',
@@ -2283,7 +2373,7 @@ const handleDeleteMessage = async (id) => {
                               onChange={(e) => setNewMessage(e.target.value)}
                               placeholder="💭 Écrivez votre message..."
                               style={{
-                                width: '83%',
+                                width: '90%',
                                 padding: '1rem',
                                 border: '2px solid #E2E8F0',
                                 borderRadius: '12px',
