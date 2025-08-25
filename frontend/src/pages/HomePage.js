@@ -1204,7 +1204,7 @@ const handleDeleteMessage = async (id) => {
                               onChange={e => setEditTitle(e.target.value)}
                               placeholder="Nouveau titre"
                               style={{ 
-                                width: '100%', 
+                                width: '90%', 
                                 marginBottom: '0.75rem', 
                                 padding: '0.75rem', 
                                 fontSize: '14px', 
@@ -1219,7 +1219,7 @@ const handleDeleteMessage = async (id) => {
                               onChange={e => setEditTags(e.target.value)}
                               placeholder="Tags (séparés par des virgules)"
                               style={{ 
-                                width: '100%', 
+                                width: '90%', 
                                 marginBottom: '0.75rem', 
                                 padding: '0.75rem', 
                                 fontSize: '14px', 
@@ -1234,7 +1234,7 @@ const handleDeleteMessage = async (id) => {
                               onChange={e => setEditCategories(e.target.value)}
                               placeholder="Catégories (séparées par des virgules)"
                               style={{ 
-                                width: '100%', 
+                                width: '90%', 
                                 marginBottom: '0.75rem', 
                                 padding: '0.75rem', 
                                 fontSize: '14px', 
@@ -1733,7 +1733,7 @@ const handleDeleteMessage = async (id) => {
                             </button>
 
                             <label htmlFor="import-file" style={{
-                              width: '80px',
+                              width: '100px',
                               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                               color: 'white',
                               padding: '1rem 1.5rem',
