@@ -22,9 +22,7 @@ function RegisterPage() {
 
   useEffect(() => {
     if (data?.register?.token) {
-      // Sauvegarder le token
       localStorage.setItem('token', data.register.token);
-      // Rediriger vers la page d'accueil
       navigate('/');
     }
   }, [data, navigate]);

@@ -42,6 +42,7 @@ async function findOrCreateUserOAuth(profile, provider) {
   return user;
 }
 
+// --- Google ---
 passport.use(new GoogleStrategy(
   {
     clientID: process.env.OAUTH_GOOGLE_CLIENT_ID,

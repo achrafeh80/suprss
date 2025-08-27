@@ -26,10 +26,8 @@ const resolvers = {
   DateTime,
 
   User: {
-    // Retourne les collections dont l'utilisateur est membre
     collections: async (parent, args, { prisma, user }) => {
       if (!user) return [];
-      // Cherche toutes les collections où userId = parent.id (si parent.id == user.id ou si admin regarde profil d'autrui)
       const memberships = await prisma.collectionMembership.findMany({
         where: { userId: parent.id },
         include: { collection: true }
@@ -50,8 +48,7 @@ const resolvers = {
       const membership = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: user.id, collectionId: parent.id } }
       });
-      if (!membership) return [];  // pas d'accès
-      // Récupère tous les feeds de cette collection
+      if (!membership) return [];  
       const collectionFeeds = await prisma.collectionFeed.findMany({
         where: { collectionId: parent.id },
         include: { feed: true }
@@ -59,7 +56,6 @@ const resolvers = {
       return collectionFeeds.map(cf => cf.feed);
     },
     members: async (parent, args, { prisma, user }) => {
-      // Liste des membres (utilisateur + rôle)
       const memberships = await prisma.collectionMembership.findMany({
         where: { collectionId: parent.id },
         include: { user: true }
@@ -74,26 +70,20 @@ const resolvers = {
     },
     articles: async (parent, args, { prisma, user }) => {
       if (!user) return [];
-      // Vérifie accès
       const membership = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: user.id, collectionId: parent.id } }
       });
       if (!membership || (membership.role !== 'OWNER' && !membership.canRead)) return [];
-      // Récupère les feeds de la collection
       const feedsInCollection = await prisma.collectionFeed.findMany({
         where: { collectionId: parent.id }
       });
       const feedIds = feedsInCollection.map(cf => cf.feedId);
       if (feedIds.length === 0) return [];
-      // Construit le filtre de base
       let articleWhere = { feedId: { in: feedIds } };
-      // Filtrer par feedId spécifique si fourni
       if (args.feedId) {
         articleWhere.feedId = Number(args.feedId);
       }
-      // Filtrer par tag (le flux doit contenir ce tag)
       if (args.tag) {
-        // Trouve les ids de feeds qui ont ce tag
         const taggedFeeds = await prisma.feed.findMany({
           where: { id: { in: feedIds }, tags: { has: args.tag } },
           select: { id: true }
@@ -101,11 +91,7 @@ const resolvers = {
         const taggedIds = taggedFeeds.map(f => f.id);
         articleWhere.feedId = { in: taggedIds };
       }
-      // Exclure/Inclure les lus/favoris
       if (args.unread === true) {
-        // Unread: pas d'enregistrement ou isRead=false
-        // On récupère tous les articles correspondant et on filtrera ceux qui ont un ArticleStatus isRead true
-        // Simplification: on exclut ceux marqués comme lus
         const readArticles = await prisma.articleStatus.findMany({
           where: { userId: user.id, isRead: true },
           select: { articleId: true }
@@ -116,7 +102,6 @@ const resolvers = {
         }
       }
       if (args.unread === false) {
-        // Récupère seulement ceux marqués lus
         const readArticles = await prisma.articleStatus.findMany({
           where: { userId: user.id, isRead: true },
           select: { articleId: true }
@@ -125,7 +110,7 @@ const resolvers = {
         if (readIds.length > 0) {
           articleWhere.id = { in: readIds };
         } else {
-          return []; // Aucun article lu
+          return []; 
         }
       }
       if (args.favorite === true) {
@@ -140,7 +125,6 @@ const resolvers = {
           return [];
         }
       }
-      // Recherche plein texte (sur le titre et contenu)
       if (args.search) {
         const term = args.search;
         articleWhere.OR = [
@@ -148,23 +132,19 @@ const resolvers = {
           { content: { contains: term, mode: 'insensitive' } }
         ];
       }
-      // Récupère les articles selon les critères
       const articles = await prisma.article.findMany({
         where: articleWhere,
         include: { feed: true }
       });
-      // Trier par date de publication descendante (plus récents en premier)
       articles.sort((a, b) => b.published - a.published);
       return articles;
     },
     messages: async (parent, args, { prisma, user }) => {
       if (!user) return [];
-      // Vérifie accès du user à la collection
       const membership = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: user.id, collectionId: parent.id } }
       });
       if (!membership) return [];
-      // Récupère tous les messages de la collection, triés par date croissante
       return prisma.message.findMany({
         where: { collectionId: parent.id },
         orderBy: { createdAt: 'asc' },
@@ -175,7 +155,6 @@ const resolvers = {
 
   Feed: {
     articles: async (parent, args, { prisma }) => {
-      // Retourne tous les articles de ce flux (sans considérer lu/pas lu car pas de user dans ce contexte)
       return prisma.article.findMany({
         where: { feedId: parent.id },
         orderBy: { published: 'desc' }
@@ -203,15 +182,10 @@ const resolvers = {
     },
     comments: async (parent, args, { prisma, user }) => {
       if (!user) return [];
-      // On attend potentiellement dans la requête GraphQL que les commentaires soient filtrés par la collection en contexte.
-      // Pour cela, on peut supposer qu'une query article est effectuée via collection.articles -> article.comments.
-      // Dans ce cas, la collectionId peut être passée dans args (non standard) ou on peut la connaître via un champ parent fictif.
-      // Faute de contexte direct, on retourne tous les commentaires de cet article que l'utilisateur peut voir, i.e. des collections où il est membre.
       const comments = await prisma.comment.findMany({
         where: { articleId: parent.id },
         include: { author: true, collection: true }
       });
-      // Ne renvoyer que les commentaires dont l'utilisateur est membre de la collection
       const visibleComments = [];
       for (const comment of comments) {
         const membership = await prisma.collectionMembership.findUnique({
@@ -221,7 +195,6 @@ const resolvers = {
           visibleComments.push(comment);
         }
       }
-      // Trier par date
       visibleComments.sort((a, b) => a.createdAt - b.createdAt);
       return visibleComments;
     }
@@ -238,42 +211,35 @@ const resolvers = {
   Query: {
     me: async (parent, args, { prisma, user }) => {
       if (!user) return null;
-      return user; // user est déjà l'objet User récupéré dans le context
+      return user; 
     },
     collections: async (parent, args, { prisma, user }) => {
       if (!user) return [];
-      // Récupère toutes les collections où l'utilisateur est membre
       const memberships = await prisma.collectionMembership.findMany({
         where: { userId: user.id },
         include: { collection: true }
       });
-      // On peut retourner directement les collections
       return memberships.map(m => m.collection);
     },
     collection: async (parent, { id }, { prisma, user }) => {
       if (!user) return null;
       const collectionId = Number(id);
-      // Vérifie que user est membre de cette collection
       const membership = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: user.id, collectionId: collectionId } }
       });
       if (!membership) {
         throw new Error("Accès refusé à cette collection.");
       }
-      // Renvoie la collection (les champs résolveurs complémentaires géreront le reste)
       return prisma.collection.findUnique({ where: { id: collectionId } });
     },
     feeds: async (parent, args, { prisma, user }) => {
       if (!user) return [];
-      // Tous les feeds que l'utilisateur suit via ses collections
-      // On récupère les collectionFeeds liés aux collections de l'utilisateur
       const memberships = await prisma.collectionMembership.findMany({ where: { userId: user.id } });
       const collectionIds = memberships.map(m => m.collectionId);
       const collectionFeeds = await prisma.collectionFeed.findMany({
         where: { collectionId: { in: collectionIds } },
         include: { feed: true }
       });
-      // Filtrer uniques
       const feedsMap = {};
       for (const cf of collectionFeeds) {
         feedsMap[cf.feed.id] = cf.feed;
@@ -300,7 +266,6 @@ const resolvers = {
     searchArticles: async (parent, { query }, { prisma, user }) => {
       if (!user) return [];
       if (!query || query.trim() === "") return [];
-      // Recherche sur tous les articles des collections de l'utilisateur
       const memberships = await prisma.collectionMembership.findMany({ where: { userId: user.id } });
       const collectionIds = memberships.map(m => m.collectionId);
       const collectionFeeds = await prisma.collectionFeed.findMany({ where: { collectionId: { in: collectionIds } } });
@@ -317,7 +282,6 @@ const resolvers = {
         },
         include: { feed: true }
       });
-      // On peut en outre filtrer par pertinence ou autre, mais on se contente de renvoyer les résultats
       return articles;
     },
     allUsers: async (_, __, { user }) => {
@@ -330,7 +294,6 @@ const resolvers = {
 
   Mutation: {
     register: async (parent, { email, password, name }, { prisma }) => {
-      // Vérifie unicité de l'email
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) {
         throw new Error("Un utilisateur avec cet email existe déjà.");
@@ -364,7 +327,6 @@ const resolvers = {
       if (!user) {
         throw new Error("Email ou mot de passe incorrect.");
       }
-      // Si l'utilisateur est enregistré via OAuth (pas de password), refuser login classique
       if (!user.password) {
         throw new Error("Veuillez vous connecter via OAuth2 pour cet utilisateur.");
       }
@@ -395,7 +357,6 @@ const resolvers = {
     },
     createCollection: async (parent, { name }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
-      // Crée la collection et l'entrée membership (owner)
       const collection = await prisma.collection.create({
         data: {
           name,
@@ -444,10 +405,8 @@ renameCollection: async (_, { id, name }, { prisma, user }) => {
     throw new Error("Seul le propriétaire peut supprimer la collection.");
   }
 
-  // Supprime les messages liés
   await prisma.message.deleteMany({ where: { collectionId } });
 
-  // Supprime les commentaires liés à cette collection
   const feedIds = await prisma.collectionFeed.findMany({
     where: { collectionId },
     select: { feedId: true }
@@ -461,13 +420,8 @@ renameCollection: async (_, { id, name }, { prisma, user }) => {
     }
   });
 
-  // Supprime les liens collection-feed
   await prisma.collectionFeed.deleteMany({ where: { collectionId } });
-
-  // Supprime les memberships
   await prisma.collectionMembership.deleteMany({ where: { collectionId } });
-
-  // Supprime la collection
   await prisma.collection.delete({ where: { id: collectionId } });
 
   return true;
@@ -476,20 +430,16 @@ renameCollection: async (_, { id, name }, { prisma, user }) => {
     addFeed: async (parent, { collectionId, url, title,tags, categories }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
       const colId = Number(collectionId);
-      // Vérifie que user est membre de la collection (et idéalement autorisé à ajouter un feed)
       const membership = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: user.id, collectionId: colId } }
       });
       if (!membership) {
         throw new Error("Accès refusé.");
       }
-      // Si la collection est partagée, on peut exiger role OWNER pour ajouter un flux
       if (membership.role !== 'OWNER' && !membership.canAddFeed) {
         throw new Error("Privilège requis: Ajout de flux.");
       }
-      // Vérifie si le flux existe déjà en base (globalement)
       let feed = await prisma.feed.findUnique({ where: { url } });
-      // Si le feed existe déjà et qu'on passe tags ou categories → on les met à jour
         if (feed && (tags || categories)) {
           feed = await prisma.feed.update({
             where: { id: feed.id },
@@ -516,12 +466,10 @@ renameCollection: async (_, { id, name }, { prisma, user }) => {
             }
           });
            
-          // Insère les articles initiaux du flux
           const items = parsed.items || [];
           for (let item of items) {
             const guid = item.guid || item.id || item.link;
             if (!guid) continue;
-            // Convertir la date
             let pubDate = item.isoDate ? new Date(item.isoDate) : (item.pubDate ? new Date(item.pubDate) : new Date());
             try {
               await prisma.article.create({
@@ -536,9 +484,7 @@ renameCollection: async (_, { id, name }, { prisma, user }) => {
                 }
               });
             } catch (err) {
-              // ignore duplicate article error
               if (err instanceof PrismaClientKnownRequestError) {
-                // Code P2002 correspond à violation contrainte unique (unique feedId+guid)
               } else {
                 console.error("Erreur insertion article:", err.message);
               }
@@ -549,7 +495,6 @@ renameCollection: async (_, { id, name }, { prisma, user }) => {
           throw new Error("Impossible d'ajouter le flux (URL invalide ou flux inatteignable).");
         }
       }else {
-        // Si le feed existe déjà, on peut mettre à jour les tags et catégories
         feed = await prisma.feed.update({
           where: { id: feed.id },
           data: {
@@ -558,7 +503,6 @@ renameCollection: async (_, { id, name }, { prisma, user }) => {
           }
         });
       }
-      // Maintenant associer ce feed à la collection (sauf si déjà présent)
       try {
         await prisma.collectionFeed.create({
           data: {
@@ -567,9 +511,7 @@ renameCollection: async (_, { id, name }, { prisma, user }) => {
           }
         });
       } catch (err) {
-        // Si contrainte primaire violée, le feed est déjà dans la collection
       }
-      // Mettre isShared = true sur la collection si plus d'un membre (optionnel)
       const memberCount = await prisma.collectionMembership.count({ where: { collectionId: colId } });
       if (memberCount > 1) {
         await prisma.collection.update({ where: { id: colId }, 
@@ -633,11 +575,9 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }
         where: { userId_collectionId: { userId: user.id, collectionId: colId } }
       });
       if (!membership) throw new Error("Accès refusé.");
-      // Si user n'est pas owner, on pourrait refuser la suppression, mais on accepte pour owner.
       if (membership.role !== 'OWNER' && !membership.canAddFeed) {
         throw new Error("Privilège requis : suppression de flux.");
       }
-      // Supprime le lien feed-collection
       await prisma.collectionFeed.delete({
         where: { collectionId_feedId: { collectionId: colId, feedId: fId } }
       });
@@ -646,26 +586,21 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }
     markArticleRead: async (parent, { articleId, read }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
       const artId = Number(articleId);
-      // Vérifie que l'article existe et que l'utilisateur a accès via l'un de ses feeds
       const article = await prisma.article.findUnique({ where: { id: artId }, include: { feed: true } });
       if (!article) throw new Error("Article introuvable.");
-      // Vérifie que feedId est dans l'une des collections de user
       const cf = await prisma.collectionFeed.findFirst({
         where: { feedId: article.feedId, collection: { memberships: { some: { userId: user.id } } } }
       });
       if (!cf) throw new Error("Accès refusé à cet article.");
-      // Met à jour ou crée l'état de lecture
       const statusKey = { userId: user.id, articleId: artId };
       let status = await prisma.articleStatus.findUnique({ where: { userId_articleId: statusKey } });
       if (status) {
         if (read) {
-          // Marquer comme lu
           status = await prisma.articleStatus.update({
             where: { userId_articleId: statusKey },
             data: { isRead: true }
           });
         } else {
-          // Marquer comme non lu -> soit supprimer l'enregistrement si plus favori, soit passer isRead à false
           if (!status.isFavorite) {
             await prisma.articleStatus.delete({ where: { userId_articleId: statusKey } });
             status = null;
@@ -678,12 +613,10 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }
         }
       } else {
         if (read) {
-          // créer l'enregistrement marquant comme lu
           status = await prisma.articleStatus.create({
             data: { userId: user.id, articleId: artId, isRead: true, isFavorite: false }
           });
         } else {
-          // déjà non lu par défaut, ne rien faire
         }
       }
       return article;
@@ -707,7 +640,6 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }
           });
         } else {
           if (!status.isRead) {
-            // Si pas lu et on retire favori -> plus d'état, supprimer
             await prisma.articleStatus.delete({ where: { userId_articleId: statusKey } });
             status = null;
           } else {
@@ -723,7 +655,6 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }
             data: { userId: user.id, articleId: artId, isRead: false, isFavorite: true }
           });
         } else {
-          // pas favori déjà, ne rien faire
         }
       }
       return article;
@@ -732,7 +663,6 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }
       if (!user) throw new Error("Authentification requise.");
       const colId = Number(collectionId);
       const artId = Number(articleId);
-      // Vérifie que l'utilisateur est membre de la collection
       const membership = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: user.id, collectionId: colId } }
       });
@@ -743,7 +673,6 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }
         where: { collectionId: colId, feed: { articles: { some: { id: artId } } } }
       });
       if (!cf) throw new Error("Cet article n'appartient pas à cette collection.");
-      // Crée le commentaire
       const comment = await prisma.comment.create({
         data: {
           content,
@@ -758,7 +687,6 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }
     addMessage: async (parent, { collectionId, content }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
       const colId = Number(collectionId);
-      // Vérifie que l'utilisateur est membre de la collection
       const membership = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: user.id, collectionId: colId } }
       });
@@ -774,40 +702,39 @@ updateFeed: async (parent, { feedId, title, tags, categories }, { prisma, user }
       return message;
     },
     editMessage: async (_, { id, content }, { prisma, user }) => {
-  if (!user) throw new Error("Authentification requise.");
+      if (!user) throw new Error("Authentification requise.");
 
-  const message = await prisma.message.findUnique({
-    where: { id: Number(id) },
-    include: { author: true },
-  });
+      const message = await prisma.message.findUnique({
+        where: { id: Number(id) },
+        include: { author: true },
+      });
 
-  if (!message || message.authorId !== user.id) {
-    throw new Error("Accès refusé.");
-  }
+      if (!message || message.authorId !== user.id) {
+        throw new Error("Accès refusé.");
+      }
 
-  return await prisma.message.update({
-    where: { id: Number(id) },
-    data: { content },
-  });
-},
+      return await prisma.message.update({
+        where: { id: Number(id) },
+        data: { content },
+      });
+    },
 
-deleteMessage: async (_, { id }, { prisma, user }) => {
-  if (!user) throw new Error("Authentification requise.");
+    deleteMessage: async (_, { id }, { prisma, user }) => {
+      if (!user) throw new Error("Authentification requise.");
 
-  const message = await prisma.message.findUnique({
-    where: { id: Number(id) },
-    include: { author: true },
-  });
+      const message = await prisma.message.findUnique({
+        where: { id: Number(id) },
+        include: { author: true },
+      });
 
-  if (!message || message.authorId !== user.id) {
-    throw new Error("Accès refusé.");
-  }
+      if (!message || message.authorId !== user.id) {
+        throw new Error("Accès refusé.");
+      }
 
-  return await prisma.message.delete({
-    where: { id: Number(id) },
-  });
-},
-
+      return await prisma.message.delete({
+        where: { id: Number(id) },
+      });
+    },
 
       editComment: async (_, { id, content }, { prisma }) => {
         return await prisma.comment.update({
@@ -822,42 +749,32 @@ deleteMessage: async (_, { id }, { prisma, user }) => {
         });
       },
 
-changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
-  if (!user) throw new Error("Authentification requise.");
+    changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
+      if (!user) throw new Error("Authentification requise.");
 
-  const userInDb = await prisma.user.findUnique({ where: { id: user.id } });
-  if (!userInDb || !userInDb.password) throw new Error("Mot de passe introuvable.");
+      const userInDb = await prisma.user.findUnique({ where: { id: user.id } });
+      if (!userInDb || !userInDb.password) throw new Error("Mot de passe introuvable.");
 
-  const valid = await bcrypt.compare(oldPassword, userInDb.password);
-  if (!valid) throw new Error("Ancien mot de passe incorrect.");
+      const valid = await bcrypt.compare(oldPassword, userInDb.password);
+      if (!valid) throw new Error("Ancien mot de passe incorrect.");
 
-  const hashed = await bcrypt.hash(newPassword, 10);
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { password: hashed }
-  });
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashed }
+      });
 
-  return true;
-},
+      return true;
+    },
 
-    // Delete own account
     deleteAccount: async (_, __, { prisma, user }) => {
   if (!user) throw new Error("Authentification requise.");
   const userId = user.id;
 
-  // Supprimer les messages de l'utilisateur
   await prisma.message.deleteMany({ where: { authorId: userId } });
-
-  // Supprimer les commentaires de l'utilisateur
   await prisma.comment.deleteMany({ where: { authorId: userId } });
-
-  // Supprimer les statuts d'articles de l'utilisateur
   await prisma.articleStatus.deleteMany({ where: { userId } });
-
-  // Supprimer les appartenances aux collections
   await prisma.collectionMembership.deleteMany({ where: { userId } });
-
-  // Supprimer les collections dont il est propriétaire
   const ownedCollections = await prisma.collection.findMany({
     where: { ownerId: userId }
   });
@@ -865,10 +782,8 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
   for (const col of ownedCollections) {
     const collectionId = col.id;
 
-    // Supprimer les messages associés à la collection
     await prisma.message.deleteMany({ where: { collectionId } });
 
-    // Supprimer les commentaires des articles des feeds liés à la collection
     const feedIds = await prisma.collectionFeed.findMany({
       where: { collectionId },
       select: { feedId: true }
@@ -884,19 +799,11 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
       });
     }
 
-    // Supprimer les liaisons feed <-> collection
     await prisma.collectionFeed.deleteMany({ where: { collectionId } });
-
-    // Supprimer les membres
     await prisma.collectionMembership.deleteMany({ where: { collectionId } });
-
-    // Supprimer la collection elle-même
     await prisma.collection.delete({ where: { id: collectionId } });
   }
-
-  // Supprimer l'utilisateur
   await prisma.user.delete({ where: { id: userId } });
-
   return true;
 },
 
@@ -904,11 +811,9 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
       if (!user || user.role !== 'ADMIN') throw new Error('Not authorized');
       const targetUser = await User.findById(userId);
       if (!targetUser) throw new Error('User not found');
-      // Prevent deleting self via this, if desired:
       if (targetUser.id.toString() === user.id.toString()) {
         throw new Error('Admin cannot delete their own account via this');
       }
-      // Clean up target user's data similar to deleteAccount
       const uid = targetUser._id;
       const ownedCollections = await Collection.find({ owner: uid });
       for (let coll of ownedCollections) {
@@ -932,22 +837,18 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
     addMember: async (parent, { collectionId, userEmail, role, canAddFeed,canComment,canRead}, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
       const colId = Number(collectionId);
-      // Vérifie que user est propriétaire de la collection
       const membership = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: user.id, collectionId: colId } }
       });
       if (!membership || membership.role !== 'OWNER') {
         throw new Error("Seul le propriétaire peut ajouter un membre.");
       }
-      // Trouve l'utilisateur par email
       const newUser = await prisma.user.findUnique({ where: { email: userEmail } });
       if (!newUser) throw new Error("Utilisateur introuvable pour cet email.");
-      // Vérifie si déjà membre
       const existingMember = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: newUser.id, collectionId: colId } }
       });
       if (existingMember) throw new Error("Cet utilisateur est déjà membre de la collection.");
-      // Ajoute le membre
       const asOwner = role === 'OWNER';
       const newMember = await prisma.collectionMembership.create({
         data: {
@@ -960,7 +861,6 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
         },
         include: { user: true }
       });
-      // Marquer la collection comme partagée
       await prisma.collection.update({ where: { id: colId }, data: { isShared: true } });
       return {
         user: newMember.user,
@@ -974,14 +874,12 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
       if (!user) throw new Error("Authentification requise.");
       const colId = Number(collectionId);
       const targetUserId = Number(userId);
-      // Seul owner peut retirer un membre
       const membership = await prisma.collectionMembership.findUnique({
         where: { userId_collectionId: { userId: user.id, collectionId: colId } }
       });
       if (!membership || membership.role !== 'OWNER') {
         throw new Error("Action non autorisée.");
       }
-      // Ne pas permettre de supprimer soi-même si on est owner (sinon collection orpheline)
       if (user.id === targetUserId) {
         throw new Error("Le propriétaire ne peut pas se retirer lui-même.");
       }
@@ -1032,7 +930,6 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
       });
       if (!collection) throw new Error("Accès interdit à cette collection.");
 
-      // Validate content
       if (!content || typeof content !== 'string' || content.trim() === '') {
         throw new Error('Contenu du fichier invalide ou vide.');
       }
@@ -1051,11 +948,9 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
             throw new Error(`Erreur de parsing OPML: ${err.message}`);
           }
           const outlines = parsed?.opml?.body?.outline || [];
-          // Handle both single outline and array of outlines
           const outlineArray = Array.isArray(outlines) ? outlines : [outlines];
           for (let item of outlineArray) {
             if (!item) continue;
-            // Handle nested outlines (e.g., categories in OPML)
             const items = item.outline ? (Array.isArray(item.outline) ? item.outline : [item.outline]) : [item];
             for (let subItem of items) {
               if (!subItem?.$) continue;
@@ -1207,17 +1102,14 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
         throw new Error("Authentification requise.");
       }
 
-      // 1) Normalisation / validation du format
       const allowed = new Set(["opml", "json", "csv"]);
       const fmt = (format || "opml").toString().trim().toLowerCase();
       if (!allowed.has(fmt)) {
         throw new Error("Format non supporté. Utilisez 'opml', 'json' ou 'csv'.");
       }
 
-      // 2) Récupération des feeds selon contexte (collection ciblée ou fallback 'toutes')
       let feeds = [];
 
-      // Helper: déduplique par feed.id
       const toUnique = (arr) => {
         const map = new Map();
         for (const f of arr) {
@@ -1227,7 +1119,6 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
       };
 
       if (collectionId != null) {
-        // Filtrage par collection sélectionnée + contrôle d'accès
         const colId = Number(collectionId);
         if (Number.isNaN(colId)) {
           throw new Error("Identifiant de collection invalide.");
@@ -1246,7 +1137,6 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
         });
         feeds = cfs.map((cf) => cf.feed);
       } else {
-        // Comportement historique: toutes les collections auxquelles l'user appartient
         const memberships = await prisma.collectionMembership.findMany({
           where: { userId: user.id },
           include: {
@@ -1267,12 +1157,9 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
         feeds = toUnique(acc);
       }
 
-      // 3) Sérialisation par format
       if (fmt === "opml") {
-        // OPML simple (subscriptions)
         let opml = `<?xml version="1.0" encoding="UTF-8"?>\n<opml version="2.0">\n<head>\n<title>Subscriptions</title>\n</head>\n<body>\n`;
         for (const f of feeds) {
-          // Sécurise les champs
           const title = (f.title || "").toString().replace(/"/g, "&quot;").replace(/&/g, "&amp;").replace(/</g, "&lt;");
           const url = (f.url || "").toString().replace(/"/g, "&quot;").replace(/&/g, "&amp;").replace(/</g, "&lt;");
           opml += `<outline text="${title}" type="rss" xmlUrl="${url}" />\n`;
@@ -1282,7 +1169,6 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
       }
 
       if (fmt === "json") {
-        // JSON minimal et propre
         const payload = feeds.map((f) => ({
           id: f.id,
           title: f.title || "",
@@ -1294,10 +1180,8 @@ changePassword: async (_, { oldPassword, newPassword }, { prisma, user }) => {
         return JSON.stringify(payload, null, 2);
       }
 
-      // CSV
       const csvEscape = (val) => {
         const s = (val ?? "").toString();
-        // Échappe guillemets et force l'encadrement
         return `"${s.replace(/"/g, '""')}"`;
       };
 

@@ -418,17 +418,26 @@ function HomePage({ theme, setTheme }) {
     }
   };
 
-const handleDeleteCollection = (id) => {
-  deleteCollection({ 
-    variables: { id },
-  })
-  .then(() => {
-    console.log("Collection supprimée avec succès.");
-  })
-  .catch((error) => {
-    alert(error.message); 
-  });
-};
+  const getInitials = (name = "") =>
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(w => w[0]?.toUpperCase())
+      .join("");
+
+
+  const handleDeleteCollection = (id) => {
+    deleteCollection({ 
+      variables: { id },
+    })
+    .then(() => {
+      console.log("Collection supprimée avec succès.");
+    })
+    .catch((error) => {
+      alert(error.message); 
+    });
+  };
 
   const addTag = (t) => {
   if (!tags.includes(t)) setTags([...tags, t]);
@@ -495,9 +504,6 @@ const handleUpdateFeed = (feedId) => {
     alert("Erreur lors de la mise à jour du flux : " + error.message);
   });
 };
-
-
-
 
   const handleRemoveFeed = (feedId) => {
     if (!(myPriv.isOwner || myPriv.canAddFeed)) {
@@ -669,7 +675,7 @@ const handleDeleteMessage = async (id) => {
         format = 'opml';
         break;
       case 'xml':
-        format = 'xml'; // Traité comme RSS unique
+        format = 'xml'; 
         break;
       case 'csv':
         format = 'csv';
@@ -694,7 +700,7 @@ const handleDeleteMessage = async (id) => {
       });
     };
     reader.onerror = () => alert('Erreur de lecture du fichier.');
-    reader.readAsText(file, 'UTF-8'); // Gère l'encodage UTF-8 par défaut
+    reader.readAsText(file, 'UTF-8'); 
   };
 
 
@@ -804,36 +810,80 @@ const handleDeleteMessage = async (id) => {
           WebkitTextFillColor: 'transparent'
         }}>SUPRSS</h1>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button 
-              onClick={() => navigate("/settings")}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {meData?.me && (
+            <div
+              title={meData.me.email}
               style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '0.5rem 0.9rem',
+                borderRadius: '9999px',
                 background: 'rgba(255,255,255,0.15)',
                 border: '1px solid rgba(255,255,255,0.2)',
                 color: 'white',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '15px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                fontSize: '14px',
-                fontWeight: '600',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
                 backdropFilter: 'blur(10px)',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
-              }}
-              onMouseOver={(e) => {
-                e.target.style.background = 'rgba(255,255,255,0.25)';
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.background = 'rgba(255,255,255,0.15)';
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+                cursor: 'default'
               }}
             >
-              ⚙️ Paramètres
-            </button>
-          </div>
+              <div
+                aria-hidden
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 700,
+                  fontSize: 12,
+                  letterSpacing: '0.03em'
+                }}
+              >
+                {getInitials(meData.me.name || meData.me.email)}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+                <span style={{ fontSize: 13, opacity: 0.85 }}>Bonjour,</span>
+                <span style={{ fontSize: 14, fontWeight: 700 }}>
+                  {meData.me.name || meData.me.email}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <button 
+            onClick={() => navigate("/settings")}
+            style={{
+              background: 'rgba(255,255,255,0.15)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              color: 'white',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '15px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              fontSize: '14px',
+              fontWeight: '600',
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.background = 'rgba(255,255,255,0.25)';
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.background = 'rgba(255,255,255,0.15)';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+            }}
+          >
+            ⚙️ Paramètres
+          </button>
+        </div>
+
 
       </header>
 
@@ -939,7 +989,11 @@ const handleDeleteMessage = async (id) => {
                       transition: 'all 0.2s ease'
                     }}
                   >
-                    {col.name} {col.isShared ? "👥" : "🔒"}
+                    {col.name} {col.isShared ? (
+                      <span title="Shared">👥</span>
+                    ) : (
+                      <span title="Private">🔒</span>
+                    )}
                   </button>
                   {col.members?.some(m => m.user.id === meData?.me?.id && m.role === 'OWNER') && (
                     <button
@@ -1159,7 +1213,6 @@ const handleDeleteMessage = async (id) => {
                             <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
                               <button
                                 onClick={() => {
-                                  // Double check runtime
                                   if (!(myPriv.isOwner || myPriv.canAddFeed)) return;
                                   setEditingFeedId(feed.id);
                                   setEditTitle(feed.title);
@@ -1251,7 +1304,7 @@ const handleDeleteMessage = async (id) => {
                                   background: 'linear-gradient(135deg, #48BB78 0%, #38A169 100%)',
                                   color: 'white',
                                   border: 'none',
-                                  padding: '0.75rem 1.5rem',
+                                  padding: '0.75rem 2.4rem',
                                   borderRadius: '10px',
                                   cursor: 'pointer',
                                   fontSize: '14px',
@@ -1268,7 +1321,7 @@ const handleDeleteMessage = async (id) => {
                                   background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
                                   color: 'white',
                                   border: 'none',
-                                  padding: '0.75rem 1.5rem',
+                                  padding: '0.75rem 2.4rem',
                                   borderRadius: '10px',
                                   cursor: 'pointer',
                                   fontSize: '14px',
