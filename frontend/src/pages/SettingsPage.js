@@ -123,7 +123,7 @@ function SettingsPage({ onLogout, setTheme: setAppTheme }) {
       try {
         await deleteAccount();
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/';
       } catch (err) {
         alert('Failed to delete account: ' + err.message);
       }
